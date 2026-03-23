@@ -1,0 +1,49 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Compiled files
+*.class
+
+# Logs
+*.log
+logs/
+
+# Temp files
+*.tmp
+*.swp
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Sensitive Info & Configurations
+*.properties
+*.yml
+*.yaml
+
+# IDEs
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+.metadata/
+.vscode/
+
+# Docker
+docker/*.log
+
+# Node modules
+frontend/node_modules/
+
+# Build files
+frontend/build/
+
+# Env
+frontend/.env
+
+# Coverage reports
+coverage/
+jacoco.exec
