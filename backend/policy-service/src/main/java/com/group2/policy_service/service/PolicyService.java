@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import com.group2.policy_service.dto.PolicyRequestDTO;
 import com.group2.policy_service.dto.PolicyResponseDTO;
@@ -45,6 +46,13 @@ public class PolicyService {
                 .toList();
     }
     
+    public List<UserPolicyResponseDTO> getAllUserPolicies() {
+        return userPolicyRepository.findAll()
+                .stream()
+                .map(this::mapToUserPolicyResponse)
+                .toList();
+    }
+    
     public List<PolicyResponseDTO> getAllPolicies() {
 
         return policyRepository.findByActiveTrue()
@@ -77,6 +85,8 @@ public class PolicyService {
             .plusMonths(policy.getDurationInMonths()));
 
     userPolicy.setPremiumAmount(policy.getPremiumAmount());
+    userPolicy.setOutstandingBalance(0.0);
+    userPolicy.setNextDueDate(LocalDate.now().plusMonths(1));
 
     userPolicyRepository.save(userPolicy);
 
@@ -150,7 +160,61 @@ public class PolicyService {
         return stats;
     }
 
-    // Cancel a user-policy (Admin lifecycle: ACTIVE → CANCELLED)
+    @org.springframework.transaction.annotation.Transactional
+    public UserPolicyResponseDTO requestCancellation(Long userPolicyId) {
+        Long currentUserId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        System.out.println("Processing Cancellation Request: Policy #" + userPolicyId + " by User #" + currentUserId);
+
+        UserPolicy userPolicy = userPolicyRepository.findById(userPolicyId)
+                .orElseThrow(() -> new RuntimeException("Policy record not found (ID: " + userPolicyId + ")"));
+
+        if (!userPolicy.getUserId().equals(currentUserId)) {
+            System.err.println("CRIMINAL DETECTED: User #" + currentUserId + " tried to cancel Policy #" + userPolicyId + " owned by User #" + userPolicy.getUserId());
+            throw new RuntimeException("Security Violation: You do not own this policy!");
+        }
+
+        if (userPolicy.getStatus() != PolicyStatus.ACTIVE) {
+            throw new RuntimeException("Cannot cancel: Policy is already " + userPolicy.getStatus());
+        }
+
+        userPolicy.setStatus(PolicyStatus.PENDING_CANCELLATION);
+        userPolicyRepository.save(userPolicy);
+        return mapToUserPolicyResponse(userPolicy);
+    }
+
+    public UserPolicyResponseDTO approveCancellation(Long userPolicyId) {
+        UserPolicy userPolicy = userPolicyRepository.findById(userPolicyId)
+                .orElseThrow(() -> new RuntimeException("UserPolicy not found"));
+        if (userPolicy.getStatus() != PolicyStatus.PENDING_CANCELLATION) {
+            throw new RuntimeException("Policy must be PENDING_CANCELLATION to approve.");
+        }
+        
+        Double balance = userPolicy.getOutstandingBalance() != null ? userPolicy.getOutstandingBalance() : 0.0;
+        if (balance > 0) {
+            throw new RuntimeException("Cannot approve cancellation. User has outstanding balance: ₹" + balance);
+        }
+
+        userPolicy.setStatus(PolicyStatus.CANCELLED);
+        userPolicy.setNextDueDate(null); // Terminate all future premium generations
+        userPolicyRepository.save(userPolicy);
+        return mapToUserPolicyResponse(userPolicy);
+    }
+
+    public UserPolicyResponseDTO payPremium(Long userPolicyId, Double amount) {
+        UserPolicy userPolicy = userPolicyRepository.findById(userPolicyId)
+                .orElseThrow(() -> new RuntimeException("UserPolicy not found"));
+
+        Double balance = userPolicy.getOutstandingBalance() != null ? userPolicy.getOutstandingBalance() : 0.0;
+        if (amount > balance) {
+            throw new RuntimeException("Payment amount exceeds outstanding balance!");
+        }
+
+        userPolicy.setOutstandingBalance(balance - amount);
+        userPolicyRepository.save(userPolicy);
+        return mapToUserPolicyResponse(userPolicy);
+    }
+
+    // Cancel a user-policy violently (Admin lifecycle bypass)
     public UserPolicyResponseDTO cancelPolicy(Long userPolicyId) {
 
         UserPolicy userPolicy = userPolicyRepository.findById(userPolicyId)
@@ -166,6 +230,40 @@ public class PolicyService {
         return mapToUserPolicyResponse(userPolicy);
     }
 
+    // Automatically execute Monthly Billings, Sent Reminders, and Mark Expirations
+    @Scheduled(cron = "0 0 0 * * *")
+    public void runDailyBillingAndReminders() {
+        System.out.println("Starting Daily Cron Billing Engine...");
+
+        // 1. Process Due Policies
+        List<UserPolicy> duePolicies = userPolicyRepository.findPoliciesDueForBilling();
+        for (UserPolicy p : duePolicies) {
+            double currentBalance = p.getOutstandingBalance() != null ? p.getOutstandingBalance() : 0.0;
+            p.setOutstandingBalance(currentBalance + p.getPremiumAmount());
+            LocalDate currentDue = p.getNextDueDate() != null ? p.getNextDueDate() : LocalDate.now();
+            p.setNextDueDate(currentDue.plusMonths(1));
+            System.out.println("BILLED: Policy #" + p.getId() + " charged ₹" + p.getPremiumAmount() + ". Total Balance: ₹" + p.getOutstandingBalance());
+        }
+        userPolicyRepository.saveAll(duePolicies);
+
+        // 2. Proactive Reminders 5 days prior
+        LocalDate reminderDate = LocalDate.now().plusDays(5);
+        List<UserPolicy> reminderPolicies = userPolicyRepository.findPoliciesForReminder(reminderDate);
+        for (UserPolicy p : reminderPolicies) {
+            System.out.println("NOTIFICATION DISPATCH [Email/Dashboard]: Friendly Reminder: Your Premium of ₹" + p.getPremiumAmount() + " for Policy #" + p.getId() + " is due on " + reminderDate);
+        }
+
+        // 3. Mark elapsed dates past duration as EXPIRED
+        List<UserPolicy> expiredPolicies = userPolicyRepository.findExpiredActivePolicies();
+        if (!expiredPolicies.isEmpty()) {
+            for (UserPolicy userPolicy : expiredPolicies) {
+                userPolicy.setStatus(PolicyStatus.EXPIRED);
+            }
+            userPolicyRepository.saveAll(expiredPolicies);
+            System.out.println("Successfully marked " + expiredPolicies.size() + " elapsed policies as EXPIRED.");
+        }
+    }
+
     // ================= MAPPERS =================
 
     private PolicyResponseDTO mapToPolicyResponse(Policy policy) {
@@ -176,6 +274,12 @@ public class PolicyService {
         dto.setPremiumAmount(policy.getPremiumAmount());
         dto.setCoverageAmount(policy.getCoverageAmount());
         dto.setDurationInMonths(policy.getDurationInMonths());
+        if (policy.getPolicyType() != null) {
+            dto.setPolicyTypeId(policy.getPolicyType().getId());
+            if (policy.getPolicyType().getCategory() != null) {
+                dto.setPolicyCategory(policy.getPolicyType().getCategory().name());
+            }
+        }
         return dto;
     }
 
@@ -188,6 +292,8 @@ public class PolicyService {
         dto.setPremiumAmount(userPolicy.getPremiumAmount());
         dto.setStartDate(userPolicy.getStartDate());
         dto.setEndDate(userPolicy.getEndDate());
+        dto.setOutstandingBalance(userPolicy.getOutstandingBalance() != null ? userPolicy.getOutstandingBalance() : 0.0);
+        dto.setNextDueDate(userPolicy.getNextDueDate());
         return dto;
     }
 }

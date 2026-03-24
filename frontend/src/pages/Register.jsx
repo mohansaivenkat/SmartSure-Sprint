@@ -12,6 +12,16 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const getPasswordErrors = (pwd) => {
+    const errors = [];
+    if (pwd.length < 12) errors.push('At least 12 characters');
+    if (!/[A-Z]/.test(pwd)) errors.push('One uppercase letter');
+    if (!/[a-z]/.test(pwd)) errors.push('One lowercase letter');
+    if (!/[0-9]/.test(pwd)) errors.push('One number');
+    if (!/[^A-Za-z0-9]/.test(pwd)) errors.push('One special symbol');
+    return errors;
+  };
+
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleSendOtp = async () => {
@@ -41,6 +51,12 @@ export default function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!form.name || !form.password) { toast.error('Please fill in all required fields'); return; }
+    
+    const pwdErrors = getPasswordErrors(form.password);
+    if (pwdErrors.length > 0) {
+      toast.error('Please fix password requirements');
+      return;
+    }
     setLoading(true);
     try {
       await authAPI.register(form);
@@ -110,7 +126,9 @@ export default function Register() {
               <div className="space-y-1.5">
                 <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Email Address</label>
                 <div className="relative">
-                  <HiMail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <HiMail className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                  </div>
                   <input
                     id="register-email"
                     type="email" value={form.email} onChange={(e) => update('email', e.target.value)}
@@ -161,7 +179,9 @@ export default function Register() {
               <div className="space-y-1.5">
                 <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Full Name *</label>
                 <div className="relative">
-                  <HiUser className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <HiUser className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                  </div>
                   <input id="register-name" type="text" value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="John Doe"
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none"
                     style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }} />
@@ -170,21 +190,35 @@ export default function Register() {
               <div className="space-y-1.5">
                 <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Password *</label>
                 <div className="relative">
-                  <HiLockClosed className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <HiLockClosed className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                  </div>
                   <input id="register-password" type={showPassword ? 'text' : 'password'} value={form.password}
-                    onChange={(e) => update('password', e.target.value)} placeholder="••••••••"
+                    onChange={(e) => update('password', e.target.value)} placeholder="••••••••••••"
                     className="w-full pl-10 pr-10 py-2.5 rounded-xl text-sm outline-none"
                     style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2"
-                    style={{ color: 'var(--color-text-secondary)' }}>
-                    {showPassword ? <HiEyeOff className="w-5 h-5" /> : <HiEye className="w-5 h-5" />}
-                  </button>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      style={{ color: 'var(--color-text-secondary)' }}>
+                      {showPassword ? <HiEyeOff className="w-5 h-5" /> : <HiEye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
+                {form.password && getPasswordErrors(form.password).length > 0 && (
+                  <div className="mt-2 text-xs text-red-500 space-y-1">
+                    <p className="font-semibold">Password must contain:</p>
+                    <ul className="list-disc pl-4 space-y-0.5">
+                      {getPasswordErrors(form.password).map(err => <li key={err}>{err}</li>)}
+                    </ul>
+                  </div>
+                )}
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Phone</label>
                 <div className="relative">
-                  <HiPhone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <HiPhone className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                  </div>
                   <input id="register-phone" type="tel" value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="9876543210"
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none"
                     style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }} />
@@ -193,7 +227,9 @@ export default function Register() {
               <div className="space-y-1.5">
                 <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Address</label>
                 <div className="relative">
-                  <HiLocationMarker className="absolute left-3 top-3 w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                  <div className="absolute top-3 left-0 pl-3 flex items-start pointer-events-none">
+                    <HiLocationMarker className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                  </div>
                   <textarea id="register-address" value={form.address} onChange={(e) => update('address', e.target.value)}
                     placeholder="Your address" rows={2}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none resize-none"

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: '',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   timeout: 15000,
 });
 
@@ -35,7 +35,7 @@ export const authAPI = {
   login: (data) => API.post('/auth-service/api/auth/login', data),  register: (data) => API.post('/auth-service/api/auth/register', data),
   sendOtp: (email) => API.post(`/auth-service/api/auth/send-otp?email=${email}`),
   verifyOtp: (email, otp) => API.post(`/auth-service/api/auth/verify-otp?email=${email}&otp=${otp}`),
-  getUserById: (id) => API.get(`/auth-service/api/auth/users/${id}`),
+  getUserById: (id, config) => API.get(`/auth-service/api/auth/users/${id}`, config),
 };
 
 // ==================== POLICY SERVICE ====================
@@ -45,6 +45,8 @@ export const policyAPI = {
   getPolicyTypes: () => API.get('/policy-service/api/policy-types'),
   purchasePolicy: (policyId) => API.post(`/policy-service/api/policies/purchase?policyId=${policyId}`),
   getUserPolicies: (userId) => API.get(`/policy-service/api/policies/user/${userId}`),
+  requestCancellation: (id) => API.put(`/policy-service/api/policies/user-policies/${id}/request-cancellation`, {}),
+  payPremium: (id, amount) => API.put(`/policy-service/api/policies/user-policies/${id}/pay-premium?amount=${amount}`, {}),
 };
 
 // ==================== CLAIMS SERVICE ====================
@@ -75,6 +77,10 @@ export const adminAPI = {
   deletePolicy: (id) => API.delete(`/admin-service/api/admin/policies/${id}`),
   getReports: () => API.get('/admin-service/api/admin/reports'),
   getUsers: () => API.get('/admin-service/api/admin/users'),
+  getAllUserPolicies: () => API.get('/policy-service/api/admin/user-policies'),
+  approveCancellation: (id) => API.put(`/policy-service/api/admin/policies/user-policies/${id}/approve-cancellation`),
+  getUserPolicies: (userId) => API.get(`/policy-service/api/policies/user/${userId}`),
+  getAllClaims: () => API.get('/admin-service/api/admin/claims'),
 };
 
 // ==================== PAYMENT SERVICE ====================

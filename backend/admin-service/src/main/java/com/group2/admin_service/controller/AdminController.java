@@ -57,6 +57,12 @@ public class AdminController {
         return adminService.downloadClaimDocument(id);
     }
 
+    // Get all claims across all users
+    @GetMapping("/claims")
+    public ResponseEntity<List<ClaimDTO>> getAllClaims() {
+        return ResponseEntity.ok(adminService.getAllClaims());
+    }
+
     // ==================== POLICY PRODUCT MANAGEMENT ====================
 
     // Create a new policy product

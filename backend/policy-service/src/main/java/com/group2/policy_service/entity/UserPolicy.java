@@ -16,24 +16,44 @@ import jakarta.persistence.Table;
 @Table(name = "user_policies")
 public class UserPolicy {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    private Long userId;
+	private Long userId;
 
-    @ManyToOne
-    @JoinColumn(name = "policy_id")
-    private Policy policy;
+	@ManyToOne
+	@JoinColumn(name = "policy_id")
+	private Policy policy;
 
-    @Enumerated(EnumType.STRING)
-    private PolicyStatus status;
+	@Enumerated(EnumType.STRING)
+	private PolicyStatus status;
 
-    private Double premiumAmount;
+	private Double premiumAmount;
 
-    private LocalDate startDate;
+	private LocalDate startDate;
 
-    private LocalDate endDate;
+	private LocalDate endDate;
+
+	private Double outstandingBalance;
+
+	private LocalDate nextDueDate;
+
+	public Double getOutstandingBalance() {
+		return outstandingBalance;
+	}
+
+	public void setOutstandingBalance(Double outstandingBalance) {
+		this.outstandingBalance = outstandingBalance;
+	}
+
+	public LocalDate getNextDueDate() {
+		return nextDueDate;
+	}
+
+	public void setNextDueDate(LocalDate nextDueDate) {
+		this.nextDueDate = nextDueDate;
+	}
 
 	public Long getId() {
 		return id;
@@ -42,8 +62,6 @@ public class UserPolicy {
 	public void setId(Long id) {
 		this.id = id;
 	}
-
-	
 
 	public Long getUserId() {
 		return userId;
@@ -92,6 +110,5 @@ public class UserPolicy {
 	public void setEndDate(LocalDate endDate) {
 		this.endDate = endDate;
 	}
-    
-    
+
 }

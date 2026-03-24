@@ -212,6 +212,24 @@ public class ClaimService {
 				})
 				.toList();
 	}
+
+	// Get all claims in the system
+	public List<ClaimResponseDTO> getAllClaims() {
+		return claimRepository.findAll()
+				.stream()
+				.map(claim -> {
+					ClaimResponseDTO dto = new ClaimResponseDTO();
+					dto.setClaimId(claim.getId());
+					dto.setPolicyId(claim.getPolicyId());
+					dto.setUserId(claim.getUserId());
+					dto.setClaimAmount(claim.getClaimAmount());
+					dto.setDescription(claim.getDescription());
+					dto.setStatus(claim.getClaimStatus().name());
+					dto.setMessage("Claim fetched successfully");
+					return dto;
+				})
+				.toList();
+	}
 	
 	
 	public ClaimStatsDTO getClaimStats() {

@@ -4,5 +4,6 @@ public enum PolicyStatus {
     CREATED,
     ACTIVE,
     EXPIRED,
+    PENDING_CANCELLATION,
     CANCELLED
 }

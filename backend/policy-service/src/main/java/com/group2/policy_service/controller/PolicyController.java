@@ -57,6 +57,12 @@ public class PolicyController {
         return policyService.getPoliciesByUserId(userId);
     }
 
+    @GetMapping("/admin/user-policies")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<UserPolicyResponseDTO> getAllUserPolicies() {
+        return policyService.getAllUserPolicies();
+    }
+
     @PostMapping("/admin/policies")
     public PolicyResponseDTO createPolicy(@RequestBody PolicyRequestDTO dto) {
         return policyService.createPolicy(dto);
@@ -81,7 +87,27 @@ public class PolicyController {
 
     // Cancel a user's policy (Admin lifecycle: ACTIVE → CANCELLED)
     @PutMapping("/admin/policies/{id}/cancel")
-    public ResponseEntity<UserPolicyResponseDTO> cancelPolicy(@PathVariable Long id) {
+    public ResponseEntity<UserPolicyResponseDTO> cancelPolicy(@PathVariable("id") Long id) {
         return ResponseEntity.ok(policyService.cancelPolicy(id));
+    }
+
+    // User requests early cancellation
+    @PutMapping("/policies/user-policies/{id}/request-cancellation")
+    public ResponseEntity<UserPolicyResponseDTO> requestCancellation(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(policyService.requestCancellation(id));
+    }
+
+    // Admin approves a cancellation request
+    @PutMapping("/admin/policies/user-policies/{id}/approve-cancellation")
+    public ResponseEntity<UserPolicyResponseDTO> approveCancellation(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(policyService.approveCancellation(id));
+    }
+
+    // Deduct outstanding balance after successful payment
+    @PutMapping("/policies/user-policies/{id}/pay-premium")
+    public ResponseEntity<UserPolicyResponseDTO> payPremium(
+            @PathVariable("id") Long id, 
+            @RequestParam("amount") Double amount) {
+        return ResponseEntity.ok(policyService.payPremium(id, amount));
     }
 }

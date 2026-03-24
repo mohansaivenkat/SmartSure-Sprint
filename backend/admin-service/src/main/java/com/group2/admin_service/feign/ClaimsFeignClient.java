@@ -34,4 +34,7 @@ public interface ClaimsFeignClient {
 
     @GetMapping("/api/claims/{id}/document")
     org.springframework.http.ResponseEntity<byte[]> downloadDocument(@PathVariable("id") Long id);
+
+    @GetMapping("/api/claims")
+    List<ClaimDTO> getAllClaims();
 }

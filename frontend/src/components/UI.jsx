@@ -52,21 +52,23 @@ export function EmptyState({ icon: Icon, title, description, action }) {
 export function StatCard({ icon: Icon, label, value, color, trend }) {
   return (
     <div
-      className="p-5 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg animate-fade-in"
+      className="p-5 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg animate-fade-in flex items-center gap-4"
       style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
-          <Icon className="w-5 h-5" style={{ color }} />
-        </div>
-        {trend && (
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: `${color}15`, color }}>
-            {trend}
-          </span>
-        )}
+      <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}15` }}>
+        <Icon className="w-6 h-6" style={{ color }} />
       </div>
-      <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>{value}</p>
-      <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>{label}</p>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between">
+          <p className="text-2xl font-bold truncate" style={{ color: 'var(--color-text)' }}>{value}</p>
+          {trend && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: `${color}15`, color }}>
+              {trend}
+            </span>
+          )}
+        </div>
+        <p className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>{label}</p>
+      </div>
     </div>
   );
 }
@@ -225,5 +227,55 @@ export function Textarea({ label, error, ...props }) {
       />
       {error && <p className="text-xs" style={{ color: 'var(--color-danger)' }}>{error}</p>}
     </div>
+  );
+}
+export function ChartDonut({ data = [] }) {
+  // Count by status
+  const stats = data.reduce((acc, p) => {
+    const s = p.status || 'UNKNOWN';
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {});
+
+  const total = data.length || 1;
+  const colors = {
+    ACTIVE: '#10b981',
+    EXPIRED: '#64748b',
+    CANCELLED: '#ef4444',
+    SUBMITTED: '#f59e0b',
+    UNDER_REVIEW: '#6366f1',
+    APPROVED: '#10b981',
+    REJECTED: '#ef4444',
+  };
+
+  let currentPercent = 0;
+  const slices = Object.entries(stats).map(([status, count]) => {
+    const percent = (count / total) * 100;
+    const start = currentPercent;
+    currentPercent += percent;
+    return { status, count, start, percent, color: colors[status] || '#94a3b8' };
+  });
+
+  return (
+    <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+      {slices.map((slice, i) => {
+        const strokeDasharray = `${slice.percent} ${100 - slice.percent}`;
+        const strokeDashoffset = -slice.start;
+        return (
+          <circle
+            key={i}
+            cx="50"
+            cy="50"
+            r="40"
+            fill="transparent"
+            stroke={slice.color}
+            strokeWidth="12"
+            strokeDasharray={strokeDasharray}
+            strokeDashoffset={strokeDashoffset}
+            className="transition-all duration-1000 ease-out"
+          />
+        );
+      })}
+    </svg>
   );
 }

@@ -16,6 +16,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminPolicies from './pages/admin/AdminPolicies';
 import AdminClaims from './pages/admin/AdminClaims';
 import AdminReports from './pages/admin/AdminReports';
+import AdminSubscriptions from './pages/admin/AdminSubscriptions';
 
 function AppContent() {
   const { user } = useAuth();
@@ -39,11 +40,13 @@ function AppContent() {
         <Route path="/admin/policies" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminPolicies /></ProtectedRoute>} />
         <Route path="/admin/claims" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminClaims /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminReports /></ProtectedRoute>} />
+        <Route path="/admin/subscriptions" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSubscriptions /></ProtectedRoute>} />
 
         {/* Default */}
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
+      {user && <div className="mob-only tab-spacer" style={{ height: '68px' }} />}
     </div>
   );
 }

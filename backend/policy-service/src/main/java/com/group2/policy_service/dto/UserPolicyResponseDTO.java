@@ -13,6 +13,16 @@ public class UserPolicyResponseDTO {
     private LocalDate startDate;
     private LocalDate endDate;
     private Double premiumAmount;
+
+    private Double outstandingBalance;
+    private LocalDate nextDueDate;
+
+	public Double getOutstandingBalance() { return outstandingBalance; }
+	public void setOutstandingBalance(Double outstandingBalance) { this.outstandingBalance = outstandingBalance; }
+
+	public LocalDate getNextDueDate() { return nextDueDate; }
+	public void setNextDueDate(LocalDate nextDueDate) { this.nextDueDate = nextDueDate; }
+
 	public Long getId() {
 		return id;
 	}

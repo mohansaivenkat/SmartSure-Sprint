@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { policyAPI, claimsAPI } from '../services/api';
-import { HiDocumentText, HiClipboardList, HiCurrencyRupee, HiShieldCheck, HiArrowRight, HiPlus } from 'react-icons/hi';
-import { StatCard, PageHeader, Card, Badge } from '../components/UI';
+import { HiDocumentText, HiClipboardList, HiCurrencyRupee, HiShieldCheck, HiArrowRight, HiPlus, HiLightningBolt } from 'react-icons/hi';
+import { StatCard, PageHeader, Card, Badge, ChartDonut } from '../components/UI';
 import LoadingSpinner, { ErrorMessage } from '../components/UI';
 
 export default function Dashboard() {
@@ -24,6 +25,7 @@ export default function Dashboard() {
       setPolicies(policiesRes.data);
       setClaims(claimsRes.data);
     } catch (err) {
+      console.error(err);
       setError(err.response?.data?.message || 'Failed to load dashboard data');
     } finally {
       setLoading(false);
@@ -32,110 +34,157 @@ export default function Dashboard() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // Stats Logic
+  const activePolicies = policies.filter((p) => p.status === 'ACTIVE');
+  const totalPremium = activePolicies.reduce((sum, p) => sum + (p.premiumAmount || 0), 0);
+  const pendingClaims = claims.filter(c => ['SUBMITTED', 'UNDER_REVIEW'].includes(c.status));
+
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorMessage message={error} onRetry={fetchData} />;
 
-  const activePolicies = policies.filter((p) => p.status === 'ACTIVE');
-  const totalPremium = activePolicies.reduce((sum, p) => sum + (p.premiumAmount || 0), 0);
-  const pendingClaims = claims.filter((c) => ['SUBMITTED', 'UNDER_REVIEW'].includes(c.status));
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
       <PageHeader
-        title={`Welcome, ${user.name || 'Customer'}`}
-        subtitle="Here&apos;s an overview of your insurance portfolio"
+        title={`Welcome back, ${user.name.split(' ')[0]}`}
+        subtitle="Here's a synchronized overview of your insurance portfolio"
       />
 
-      {/* Stats */}
+      {/* 1. TOP LEVEL KPI GRID (4 Columns) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 stagger-children">
-        <StatCard icon={HiDocumentText} label="Active Policies" value={activePolicies.length} color="#6366f1" />
-        <StatCard icon={HiClipboardList} label="Total Claims" value={claims.length} color="#06b6d4" />
-        <StatCard icon={HiCurrencyRupee} label="Monthly Premium" value={`₹${totalPremium.toLocaleString()}`} color="#10b981" />
-        <StatCard icon={HiShieldCheck} label="Pending Claims" value={pendingClaims.length} color="#f59e0b" />
+        <StatCard 
+          icon={HiDocumentText} 
+          label="Active Policies" 
+          value={activePolicies.length} 
+          color="var(--color-primary)" 
+        />
+        <StatCard 
+          icon={HiCurrencyRupee} 
+          label="Monthly Premium" 
+          value={`₹${totalPremium.toLocaleString()}`} 
+          color="var(--color-success)" 
+        />
+        <StatCard 
+          icon={HiClipboardList} 
+          label="Total Claims" 
+          value={claims.length} 
+          color="var(--color-accent)" 
+        />
+        <StatCard 
+          icon={HiShieldCheck} 
+          label="Pending Claims" 
+          value={pendingClaims.length} 
+          color="var(--color-warning)" 
+        />
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <Link to="/policies">
-          <Card hoverable>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6366f1, #818cf8)' }}>
-                  <HiPlus className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold" style={{ color: 'var(--color-text)' }}>Browse Policies</p>
-                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Find and purchase insurance plans</p>
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        {/* 2. PRIMARY VIEW: Active Subscriptions Table (8 Cols) */}
+        <div className="lg:col-span-8 space-y-6">
+          <Card>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>Active Subscriptions</h3>
+              <Link to="/my-policies" className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>View All Policies</Link>
+            </div>
+            
+            {activePolicies.length === 0 ? (
+              <div className="py-12 text-center">
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>No active subscriptions found</p>
+                <Link to="/policies">
+                  <button className="mt-4 px-6 py-2 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90" style={{ backgroundColor: 'var(--color-primary)' }}>
+                    Purchase Insurance
+                  </button>
+                </Link>
               </div>
-              <HiArrowRight className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b" style={{ borderColor: 'var(--color-border)' }}>
+                      <th className="pb-4 text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>Plan Details</th>
+                      <th className="pb-4 text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>Premium</th>
+                      <th className="pb-4 text-xs font-bold uppercase tracking-wider text-right" style={{ color: 'var(--color-text-secondary)' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
+                    {activePolicies.slice(0, 5).map((p) => (
+                      <tr key={p.id} className="group hover:bg-[var(--color-bg)] transition-colors">
+                        <td className="py-4">
+                          <p className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>{p.policyName}</p>
+                          <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>ID: #{p.id.toString().slice(-6)}</p>
+                        </td>
+                        <td className="py-4">
+                          <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>₹{p.premiumAmount.toLocaleString()}</p>
+                          <p className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>per month</p>
+                        </td>
+                        <td className="py-4 text-right">
+                          <Badge status={p.status} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {/* Recent Claims Section */}
+          <Card>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>Recent Claim Activity</h3>
+              <Link to="/my-claims" className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>Claims History</Link>
+            </div>
+            {claims.length === 0 ? (
+              <p className="text-sm py-4 text-center" style={{ color: 'var(--color-text-secondary)' }}>No claim records yet</p>
+            ) : (
+              <div className="space-y-4">
+                {claims.slice(0, 3).map((c) => (
+                  <div key={c.claimId} className="flex items-center justify-between p-4 rounded-2xl border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg)' }}>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+                        <HiClipboardList className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>Claim #{c.claimId}</p>
+                        <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>₹{c.claimAmount.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <Badge status={c.status} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* 3. SIDEBAR: Quick Actions Vertical Stack (4 Cols) */}
+        <div className="lg:col-span-4 space-y-6">
+          <Card>
+            <h3 className="text-sm font-bold uppercase tracking-widest mb-6" style={{ color: 'var(--color-text-secondary)' }}>Quick Actions</h3>
+            <div className="space-y-3">
+              <QuickActionLink to="/policies" icon={HiPlus} label="Purchase New Policy" />
+              <QuickActionLink to="/my-claims" icon={HiClipboardList} label="File a New Claim" />
+              <QuickActionLink to="/my-policies" icon={HiDocumentText} label="Manage Subscriptions" />
             </div>
           </Card>
-        </Link>
-        <Link to="/my-claims">
-          <Card hoverable>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #06b6d4, #22d3ee)' }}>
-                  <HiClipboardList className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold" style={{ color: 'var(--color-text)' }}>File a Claim</p>
-                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Submit and track your claims</p>
-                </div>
-              </div>
-              <HiArrowRight className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
-            </div>
-          </Card>
-        </Link>
-      </div>
 
-      {/* Recent Policies & Claims */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>Recent Policies</h3>
-            <Link to="/my-policies" className="text-sm font-medium" style={{ color: 'var(--color-primary)' }}>View all</Link>
-          </div>
-          {policies.length === 0 ? (
-            <p className="text-sm py-4 text-center" style={{ color: 'var(--color-text-secondary)' }}>No policies yet</p>
-          ) : (
-            <div className="space-y-3">
-              {policies.slice(0, 4).map((p) => (
-                <div key={p.id} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: 'var(--color-bg)' }}>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{p.policyName}</p>
-                    <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>₹{p.premiumAmount}/mo</p>
-                  </div>
-                  <Badge status={p.status} />
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
+          
+        </div>
 
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>Recent Claims</h3>
-            <Link to="/my-claims" className="text-sm font-medium" style={{ color: 'var(--color-primary)' }}>View all</Link>
-          </div>
-          {claims.length === 0 ? (
-            <p className="text-sm py-4 text-center" style={{ color: 'var(--color-text-secondary)' }}>No claims yet</p>
-          ) : (
-            <div className="space-y-3">
-              {claims.slice(0, 4).map((c) => (
-                <div key={c.claimId} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: 'var(--color-bg)' }}>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Claim #{c.claimId}</p>
-                    <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>₹{c.claimAmount}</p>
-                  </div>
-                  <Badge status={c.status} />
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
       </div>
     </div>
+  );
+}
+
+// Side-Nav Helper Component
+function QuickActionLink({ to, icon: Icon, label }) {
+  return (
+    <Link to={to} className="flex items-center gap-3 p-4 rounded-xl transition-all hover:translate-x-1 border border-transparent hover:shadow-sm" style={{ backgroundColor: 'var(--color-bg)' }}>
+      <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+        <Icon className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+      </div>
+      <span className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>{label}</span>
+      <HiArrowRight className="ml-auto w-4 h-4 opacity-30" />
+    </Link>
   );
 }

@@ -101,6 +101,12 @@ public class ClaimController {
 	public ResponseEntity<List<ClaimResponseDTO>> getClaimsByUserId(@PathVariable Long userId) {
 		return ResponseEntity.ok(claimService.getClaimsByUserId(userId));
 	}
+
+	@GetMapping
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<List<ClaimResponseDTO>> getAllClaims() {
+		return ResponseEntity.ok(claimService.getAllClaims());
+	}
 	
 	// Stats endpoint (matches Feign client path /api/claims/stats)
 	@GetMapping("/stats")

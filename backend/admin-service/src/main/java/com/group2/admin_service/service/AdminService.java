@@ -103,6 +103,17 @@ public class AdminService {
         throw new RuntimeException("Fallback: Could not download document. Service might be down. Reason: " + e.getMessage());
     }
 
+    // Get all claims across all users
+    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    public List<ClaimDTO> getAllClaims() {
+        return claimsFeignClient.getAllClaims();
+    }
+
+    @Recover
+    public List<ClaimDTO> recoverGetAllClaims(Exception e) {
+        return Collections.emptyList();
+    }
+
     // Get all users
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public List<UserDTO> getAllUsers() {

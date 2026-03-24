@@ -23,7 +23,14 @@ export default function Login() {
     try {
       const res = await authAPI.login({ email, password });
       const { token, role, id } = res.data;
-      login({ id, email, role, name: email.split('@')[0] }, token);
+      
+      // Fetch full profile - manually pass token since it's not in localStorage yet
+      const userRes = await authAPI.getUserById(id, { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      
+      const fullUser = { ...userRes.data, token };
+      login(fullUser, token);
       toast.success('Welcome back!');
       navigate(role === 'ADMIN' ? '/admin/dashboard' : '/dashboard');
     } catch (err) {
@@ -76,7 +83,9 @@ export default function Login() {
             <div className="space-y-1.5">
               <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Email</label>
               <div className="relative">
-                <HiMail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <HiMail className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                </div>
                 <input
                   id="login-email"
                   type="email"
@@ -97,7 +106,9 @@ export default function Login() {
             <div className="space-y-1.5">
               <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Password</label>
               <div className="relative">
-                <HiLockClosed className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <HiLockClosed className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                </div>
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
@@ -112,14 +123,15 @@ export default function Login() {
                     '--tw-ring-color': 'var(--color-primary)',
                   }}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                  style={{ color: 'var(--color-text-secondary)' }}
-                >
-                  {showPassword ? <HiEyeOff className="w-5 h-5" /> : <HiEye className="w-5 h-5" />}
-                </button>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    {showPassword ? <HiEyeOff className="w-5 h-5" /> : <HiEye className="w-5 h-5" />}
+                  </button>
+                </div>
               </div>
             </div>
 
