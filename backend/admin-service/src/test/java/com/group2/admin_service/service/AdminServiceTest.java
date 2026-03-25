@@ -89,10 +89,10 @@ public class AdminServiceTest {
      */
     @Test
     void testGetClaimStatus() {
-        ClaimStatusDTO status = new ClaimStatusDTO();
+        ClaimDTO status = new ClaimDTO();
         when(claimsFeignClient.getClaimStatus(1L)).thenReturn(status);
 
-        ClaimStatusDTO result = adminService.getClaimStatus(1L);
+        ClaimDTO result = adminService.getClaimStatus(1L);
         assertNotNull(result);
         verify(claimsFeignClient, times(1)).getClaimStatus(1L);
     }
@@ -104,7 +104,7 @@ public class AdminServiceTest {
      */
     @Test
     void testRecoverGetClaimStatus() {
-        ClaimStatusDTO result = adminService.recoverGetClaimStatus(new Exception("Fail"), 1L);
+        ClaimDTO result = adminService.recoverGetClaimStatus(new Exception("Fail"), 1L);
         assertNotNull(result);
     }
 

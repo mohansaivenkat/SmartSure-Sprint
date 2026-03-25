@@ -21,7 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
 import com.group2.admin_service.dto.ClaimDTO;
-import com.group2.admin_service.dto.ClaimStatusDTO;
 import com.group2.admin_service.dto.PolicyDTO;
 import com.group2.admin_service.dto.PolicyRequestDTO;
 import com.group2.admin_service.dto.ReportResponse;
@@ -38,7 +37,7 @@ public class AdminControllerTest {
     private AdminController adminController;
 
     private ReviewRequest reviewRequest;
-    private ClaimStatusDTO claimStatusDTO;
+    private ClaimDTO claimDTO;
     private List<ClaimDTO> claimList;
     private PolicyDTO policyDTO;
     private PolicyRequestDTO policyRequestDTO;
@@ -49,10 +48,9 @@ public class AdminControllerTest {
         reviewRequest = new ReviewRequest();
         reviewRequest.setStatus("APPROVED");
 
-        claimStatusDTO = new ClaimStatusDTO();
-        claimStatusDTO.setTotalClaims(10);
-        claimStatusDTO.setApprovedClaims(5);
-        claimStatusDTO.setRejectedClaims(5);
+        claimDTO = new ClaimDTO();
+        claimDTO.setClaimId(1L);
+        claimDTO.setStatus("APPROVED");
 
         claimList = Arrays.asList(new ClaimDTO(), new ClaimDTO());
 
@@ -89,11 +87,11 @@ public class AdminControllerTest {
      */
     @Test
     void testGetStatus() {
-        when(adminService.getClaimStatus(1L)).thenReturn(claimStatusDTO);
+        when(adminService.getClaimStatus(1L)).thenReturn(claimDTO);
 
-        ResponseEntity<ClaimStatusDTO> response = adminController.getStatus(1L);
+        ResponseEntity<ClaimDTO> response = adminController.getStatus(1L);
 
-        assertEquals(claimStatusDTO, response.getBody());
+        assertEquals(claimDTO, response.getBody());
         assertEquals(200, response.getStatusCode().value());
     }
 

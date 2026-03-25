@@ -1,6 +1,5 @@
 package com.group2.auth_service.service;
 
-
 import java.time.LocalDateTime;
 import java.util.Random;
 
@@ -25,9 +24,12 @@ public class OtpService {
     private final OtpRepository otpRepository;
     private final AuthServiceRepository authServiceRepository;
 
-    // 🔐 Inject API key from properties
+    // 🔐 Inject API key and sender email from properties
     @Value("${brevo.api.key}")
     private String apiKey;
+
+    @Value("${brevo.sender.email}")
+    private String senderEmail;
 
     public OtpService(OtpRepository otpRepository, AuthServiceRepository authServiceRepository) {
         this.otpRepository = otpRepository;
@@ -69,7 +71,7 @@ public class OtpService {
         headers.set("api-key", apiKey);
 
         String body = "{\n" +
-                "\"sender\": {\"name\": \"SmartSure\", \"email\": \"np164429@gmail.com\"},\n" +
+                "\"sender\": {\"name\": \"SmartSure\", \"email\": \"" + senderEmail + "\"},\n" +
                 "\"to\": [{\"email\": \"" + email + "\"}],\n" +
                 "\"subject\": \"OTP Verification\",\n" +
                 "\"htmlContent\": \"<h3>Your OTP is: <b>" + otp + "</b></h3><p>Valid for 10 minutes.</p>\"\n" +
@@ -78,7 +80,7 @@ public class OtpService {
         HttpEntity<String> request = new HttpEntity<>(body, headers);
 
         restTemplate.postForObject(url, request, String.class);
-        
+
         String response = restTemplate.postForObject(url, request, String.class);
         System.out.println("Brevo Response: " + response);
     }
