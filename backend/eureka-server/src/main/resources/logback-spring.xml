@@ -1,0 +1,48 @@
+<configuration>
+
+    <!-- App Name -->
+    <springProperty scope="context" name="appName" source="spring.application.name"/>
+
+    <springProperty scope="context" name="logstashHost" source="logstash.host" defaultValue="localhost"/>
+    
+    <!-- LOGSTASH TCP -->
+    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>${logstashHost}:5000</destination>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"service":"${appName}"}</customFields>
+        </encoder>
+    </appender>
+
+    <!-- CONSOLE -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg [traceId=%X{traceId}]%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- FILE -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>../loggers/${appName}.log</file>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>../loggers/${appName}.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg [traceId=%X{traceId}]%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- ROOT -->
+    <root level="INFO">
+        <appender-ref ref="LOGSTASH"/> 
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+</configuration>
