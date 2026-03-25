@@ -248,5 +248,14 @@ public class ClaimService {
 	    return stats;
 	}
 
+    public void cancelClaimsByPolicy(Long policyId) {
+        List<Claim> claims = claimRepository.findByPolicyId(policyId);
+        for (Claim claim : claims) {
+            if (claim.getClaimStatus() == ClaimStatus.SUBMITTED) {
+                claim.setClaimStatus(ClaimStatus.REJECTED);
+                claimRepository.save(claim);
+                System.out.println("❌ Claim #" + claim.getId() + " rejected due to Policy Cancellation request.");
+            }
+        }
+    }
 }
-
