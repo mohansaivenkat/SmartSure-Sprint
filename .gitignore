@@ -37,6 +37,7 @@ docker/*.log
 
 # Node modules
 frontend/node_modules/
+node_modules/
 
 # Build files
 frontend/build/
