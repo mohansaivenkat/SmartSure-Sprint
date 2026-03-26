@@ -1,10 +1,13 @@
 package com.group2.policy_service.dto;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 
 import com.group2.policy_service.entity.PolicyStatus;
 
-public class UserPolicyResponseDTO {
+public class UserPolicyResponseDTO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private Long id;
     private Long userId; 

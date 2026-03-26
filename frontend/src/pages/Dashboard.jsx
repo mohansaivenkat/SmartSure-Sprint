@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
 
   const fetchData = async () => {
+    if (!user?.id) return;
     setLoading(true);
     setError(null);
     try {
@@ -25,14 +26,18 @@ export default function Dashboard() {
       setPolicies(policiesRes.data);
       setClaims(claimsRes.data);
     } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.message || 'Failed to load dashboard data');
+      console.error('Dashboard error:', err);
+      setError(err.response?.data?.message || err.response?.data || 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { 
+    if (user?.id) {
+      fetchData(); 
+    }
+  }, [user?.id]);
 
   // Stats Logic
   const activePolicies = policies.filter((p) => p.status === 'ACTIVE');

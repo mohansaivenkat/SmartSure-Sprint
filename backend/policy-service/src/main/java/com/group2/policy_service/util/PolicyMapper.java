@@ -19,7 +19,9 @@ public class PolicyMapper {
         dto.setDurationInMonths(p.getDurationInMonths());
         if (p.getPolicyType() != null) {
             dto.setPolicyTypeId(p.getPolicyType().getId());
-            dto.setPolicyCategory(p.getPolicyType().getCategory().toString());
+            if (p.getPolicyType().getCategory() != null) {
+                dto.setPolicyCategory(p.getPolicyType().getCategory().toString());
+            }
         }
         return dto;
     }
@@ -28,7 +30,7 @@ public class PolicyMapper {
         UserPolicyResponseDTO dto = new UserPolicyResponseDTO();
         dto.setId(up.getId());
         dto.setUserId(up.getUserId());
-        dto.setPolicyName(up.getPolicy().getPolicyName());
+        dto.setPolicyName(up.getPolicy() != null ? up.getPolicy().getPolicyName() : "Unknown Policy");
         dto.setPremiumAmount(up.getPremiumAmount());
         dto.setStatus(up.getStatus());
         dto.setStartDate(up.getStartDate());

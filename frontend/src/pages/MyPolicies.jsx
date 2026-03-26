@@ -24,19 +24,25 @@ export default function MyPolicies() {
   const [paying, setPaying] = useState(null);
 
   const fetchPolicies = async () => {
+    if (!user?.id) return;
     setLoading(true);
     setError(null);
     try {
       const res = await policyAPI.getUserPolicies(user.id);
       setPolicies(res.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load your policies');
+      console.error('MyPolicies fetch error:', err);
+      setError(err.response?.data?.message || err.response?.data || 'Failed to load your policies');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchPolicies(); }, []);
+  useEffect(() => { 
+    if (user?.id) {
+      fetchPolicies(); 
+    }
+  }, [user?.id]);
 
   const filtered = filter === 'ALL' ? policies : policies.filter((p) => p.status === filter);
   const statusFilters = ['ALL', 'ACTIVE', 'PENDING_CANCELLATION', 'EXPIRED', 'CANCELLED'];

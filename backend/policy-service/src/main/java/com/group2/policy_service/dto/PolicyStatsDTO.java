@@ -1,6 +1,10 @@
 package com.group2.policy_service.dto;
 
-public class PolicyStatsDTO {
+import java.io.Serializable;
+
+public class PolicyStatsDTO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private long totalPolicies;
     private double totalRevenue;

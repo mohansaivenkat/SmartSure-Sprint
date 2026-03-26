@@ -23,7 +23,9 @@ public class GlobalExceptionHandler {
 	    }
 	    
 	    @ExceptionHandler(RuntimeException.class)
-	    public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
-	        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+	    public ResponseEntity<java.util.Map<String, String>> handleRuntimeException(RuntimeException ex) {
+	        java.util.Map<String, String> error = new java.util.HashMap<>();
+	        error.put("message", ex.getMessage());
+	        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
 	    }
 }

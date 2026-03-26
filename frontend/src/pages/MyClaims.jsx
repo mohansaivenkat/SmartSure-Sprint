@@ -29,6 +29,7 @@ export default function MyClaims() {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
+    if (!user?.id) return;
     setLoading(true);
     setError(null);
     try {
@@ -39,13 +40,18 @@ export default function MyClaims() {
       setClaims(claimsRes.data);
       setUserPolicies(policiesRes.data.filter((p) => p.status === 'ACTIVE'));
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load claims');
+      console.error('MyClaims fetch error:', err);
+      setError(err.response?.data?.message || err.response?.data || 'Failed to load claims');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { 
+    if (user?.id) {
+      fetchData(); 
+    }
+  }, [user?.id]);
 
   const handleSubmitClaim = async () => {
     if (!claimForm.policyId || !claimForm.claimAmount || !claimForm.description) {
