@@ -113,7 +113,7 @@ public class PolicyQueryServiceTest {
     }
 
     @Test
-    void testGetAllUserPolicies() {
+    void testGetAllUserPolicies1() {
         when(userPolicyRepository.findAll()).thenReturn(Collections.singletonList(mockUserPolicy));
         when(mapper.mapToUserPolicyResponse(any())).thenReturn(new UserPolicyResponseDTO());
 
@@ -121,4 +121,5 @@ public class PolicyQueryServiceTest {
 
         assertEquals(1, result.size());
     }
+
 }
