@@ -1,12 +1,14 @@
 package com.group2.policy_service.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,9 +54,11 @@ public class PolicyQueryServiceTest {
         mockPolicy = new Policy();
         mockPolicy.setId(10L);
         mockPolicy.setPolicyName("Health Plan");
+        mockPolicy.setDurationInMonths(12);
 
         mockUserPolicy = new UserPolicy();
         mockUserPolicy.setId(5L);
+        mockUserPolicy.setPolicy(mockPolicy);
         mockUserPolicy.setUserId(100L);
     }
 
@@ -99,6 +103,16 @@ public class PolicyQueryServiceTest {
     }
 
     @Test
+    void testGetPolicyById() {
+        when(policyRepository.findById(10L)).thenReturn(Optional.of(mockPolicy));
+        when(mapper.mapToPolicyResponse(any())).thenReturn(new PolicyResponseDTO());
+
+        PolicyResponseDTO result = policyQueryService.getPolicyById(10L);
+
+        assertNotNull(result);
+    }
+
+    @Test
     void testGetAllUserPolicies() {
         when(userPolicyRepository.findAll()).thenReturn(Collections.singletonList(mockUserPolicy));
         when(mapper.mapToUserPolicyResponse(any())).thenReturn(new UserPolicyResponseDTO());
@@ -107,5 +121,4 @@ public class PolicyQueryServiceTest {
 
         assertEquals(1, result.size());
     }
-
 }

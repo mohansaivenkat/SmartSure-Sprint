@@ -2,6 +2,7 @@ package com.group2.claims_service.config;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -26,6 +27,10 @@ public class RabbitMQConfig {
     public static final String POLICY_EXCHANGE = "policy.exchange";
     public static final String CANCELLATION_ROUTING_KEY = "policy.cancellation";
 
+    public static final String POLICY_EXCHANGE = "policy.exchange";
+    public static final String CANCELLATION_QUEUE = "policy.cancellation.queue";
+    public static final String CANCELLATION_ROUTING_KEY = "policy.cancellation";
+
     @Bean
     public TopicExchange exchange() {
         return new TopicExchange(EXCHANGE);
@@ -34,6 +39,11 @@ public class RabbitMQConfig {
     @Bean
     public org.springframework.amqp.core.DirectExchange policyExchange() {
         return new org.springframework.amqp.core.DirectExchange(POLICY_EXCHANGE);
+    }
+
+    @Bean
+    public DirectExchange policyExchange() {
+        return new DirectExchange(POLICY_EXCHANGE);
     }
 
     @Bean
@@ -46,6 +56,11 @@ public class RabbitMQConfig {
         return new Queue(CLAIM_REVIEW_QUEUE, true);
     }
     
+    @Bean
+    public Queue cancellationQueue() {
+        return new Queue(CANCELLATION_QUEUE, true);
+    }
+
     @Bean
     public Queue cancellationQueue() {
         return new Queue(CANCELLATION_QUEUE, true);

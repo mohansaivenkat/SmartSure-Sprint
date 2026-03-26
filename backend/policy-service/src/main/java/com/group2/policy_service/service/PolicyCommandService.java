@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,7 @@ public class PolicyCommandService {
     }
 
     @Transactional
+    @CacheEvict(value = {"user_policies", "policy_stats"}, allEntries = true)
     public UserPolicyResponseDTO purchasePolicy(Long policyId) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long userId = (principal instanceof Long) ? (Long) principal : Long.parseLong(principal.toString());
@@ -67,6 +69,7 @@ public class PolicyCommandService {
     }
 
     @Transactional
+    @CacheEvict(value = "user_policies", key = "#userPolicyId")
     public UserPolicyResponseDTO requestCancellation(Long userPolicyId) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long currentUserId = (principal instanceof Long) ? (Long) principal : Long.parseLong(principal.toString());
@@ -87,7 +90,7 @@ public class PolicyCommandService {
 
         // Saga Trigger
         PolicyCancellationEvent event = new PolicyCancellationEvent(
-                userPolicy.getPolicy().getId(),
+                userPolicy.getId(), // Fix: use the UserPolicy subscription ID, not the template ID
                 userPolicy.getUserId(),
                 LocalDateTime.now()
         );
@@ -97,6 +100,7 @@ public class PolicyCommandService {
     }
 
     @Transactional
+    @CacheEvict(value = "user_policies", key = "#userPolicyId")
     public UserPolicyResponseDTO approveCancellation(Long userPolicyId) {
         UserPolicy userPolicy = userPolicyRepository.findById(userPolicyId)
                 .orElseThrow(() -> new RuntimeException("Policy not found"));
@@ -111,6 +115,7 @@ public class PolicyCommandService {
     }
 
     @Transactional
+    @CacheEvict(value = {"policies", "policy_stats"}, allEntries = true)
     public PolicyResponseDTO createPolicy(PolicyRequestDTO dto) {
         PolicyType type = policyTypeRepository.findById(dto.getPolicyTypeId())
                 .orElseThrow(() -> new RuntimeException("Type not found"));
@@ -128,6 +133,7 @@ public class PolicyCommandService {
     }
 
     @Transactional
+    @CacheEvict(value = "policies", allEntries = true)
     public PolicyResponseDTO updatePolicy(Long id, PolicyRequestDTO dto) {
         Policy policy = policyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Policy not found"));
@@ -147,6 +153,7 @@ public class PolicyCommandService {
     }
 
     @Transactional
+    @CacheEvict(value = "policies", allEntries = true)
     public void deletePolicy(Long id) {
         Policy policy = policyRepository.findById(id).orElseThrow();
         policy.setActive(false);
@@ -154,6 +161,7 @@ public class PolicyCommandService {
     }
 
     @Transactional
+    @CacheEvict(value = "user_policies", allEntries = true)
     public UserPolicyResponseDTO payPremium(Long id, Double amount) {
         UserPolicy userPolicy = userPolicyRepository.findById(id).orElseThrow();
         double currentBalance = userPolicy.getOutstandingBalance() != null ? userPolicy.getOutstandingBalance() : 0.0;

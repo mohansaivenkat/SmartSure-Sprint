@@ -3,6 +3,7 @@ package com.group2.policy_service.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import com.group2.policy_service.dto.PolicyResponseDTO;
 import com.group2.policy_service.dto.PolicyStatsDTO;
@@ -31,6 +32,7 @@ public class PolicyQueryService {
         this.mapper = mapper;
     }
 
+    @Cacheable(value = "user_policies", key = "#userId")
     public List<UserPolicyResponseDTO> getPoliciesByUserId(Long userId) {
         return userPolicyRepository.findByUserId(userId)
                 .stream()
@@ -45,6 +47,7 @@ public class PolicyQueryService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "policies", key = "'all'")
     public List<PolicyResponseDTO> getAllPolicies() {
         return policyRepository.findByActiveTrue()
                 .stream()
@@ -56,12 +59,14 @@ public class PolicyQueryService {
         return policyTypeRepository.findAll();
     }
 
+    @Cacheable(value = "policies", key = "#policyId")
     public PolicyResponseDTO getPolicyById(Long policyId) {
         return policyRepository.findById(policyId)
                 .map(mapper::mapToPolicyResponse)
                 .orElseThrow(() -> new RuntimeException("Policy not found"));
     }
 
+    @Cacheable(value = "policy_stats", key = "'global'")
     public PolicyStatsDTO getPolicyStats() {
         long totalPolicies = policyRepository.count();
         Double totalPremiums = userPolicyRepository.sumPremiumAmount();

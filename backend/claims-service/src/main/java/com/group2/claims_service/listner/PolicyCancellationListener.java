@@ -16,12 +16,12 @@ public class PolicyCancellationListener {
 
     @RabbitListener(queues = "policy.cancellation.queue")
     public void handlePolicyCancellation(PolicyCancellationEvent event) {
-        System.out.println("📬 Saga Stage 2: Received Policy Cancellation Event for Policy ID: " + event.getPolicyId());
+        System.out.println("📬 Saga Stage 2: Received Policy Cancellation Event for UserPolicy ID: " + event.getUserPolicyId());
         try {
-            claimService.cancelClaimsByPolicy(event.getPolicyId());
-            System.out.println("✅ Saga Stage 2: Claims synchronized for Policy ID: " + event.getPolicyId());
+            claimService.cancelClaimsByPolicy(event.getUserPolicyId());
+            System.out.println("✅ Saga Stage 2: Claims synchronized for UserPolicy ID: " + event.getUserPolicyId());
         } catch (Exception e) {
-            System.err.println("❌ Saga Stage 2 Error: Failed to sync claims logic for policy: " + event.getPolicyId() + ". Reason: " + e.getMessage());
+            System.err.println("❌ Saga Stage 2 Error: Failed to sync claims logic for policy: " + event.getUserPolicyId() + ". Reason: " + e.getMessage());
         }
     }
 }

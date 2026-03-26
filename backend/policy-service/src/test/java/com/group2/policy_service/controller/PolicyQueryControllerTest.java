@@ -23,58 +23,58 @@ import com.group2.policy_service.service.PolicyQueryService;
 public class PolicyQueryControllerTest {
 
     @Mock
-    private PolicyQueryService queryService;
+    private PolicyQueryService policyQueryService;
 
     @InjectMocks
-    private PolicyQueryController queryController;
+    private PolicyQueryController policyQueryController;
 
     @Test
     void testGetAllPolicies() {
-        when(queryService.getAllPolicies()).thenReturn(Collections.singletonList(new PolicyResponseDTO()));
+        when(policyQueryService.getAllPolicies()).thenReturn(Collections.singletonList(new PolicyResponseDTO()));
 
-        List<PolicyResponseDTO> result = queryController.getAllPolicies();
+        List<PolicyResponseDTO> result = policyQueryController.getAllPolicies();
         assertEquals(1, result.size());
     }
 
     @Test
     void testGetAllPolicyTypes() {
-        when(queryService.getAllPolicyTypes()).thenReturn(Collections.singletonList(new PolicyType()));
+        when(policyQueryService.getAllPolicyTypes()).thenReturn(Collections.singletonList(new PolicyType()));
 
-        List<PolicyType> result = queryController.getAllPolicyTypes();
+        List<PolicyType> result = policyQueryController.getAllPolicyTypes();
         assertEquals(1, result.size());
     }
 
     @Test
     void testGetPolicy() {
         PolicyResponseDTO response = new PolicyResponseDTO();
-        when(queryService.getPolicyById(1L)).thenReturn(response);
+        when(policyQueryService.getPolicyById(1L)).thenReturn(response);
 
-        PolicyResponseDTO result = queryController.getPolicy(1L);
+        PolicyResponseDTO result = policyQueryController.getPolicy(1L);
         assertEquals(response, result);
     }
 
     @Test
     void testGetUserPolicies() {
-        when(queryService.getPoliciesByUserId(1L)).thenReturn(Collections.singletonList(new UserPolicyResponseDTO()));
+        when(policyQueryService.getPoliciesByUserId(1L)).thenReturn(Collections.singletonList(new UserPolicyResponseDTO()));
 
-        List<UserPolicyResponseDTO> result = queryController.getUserPolicies(1L);
+        List<UserPolicyResponseDTO> result = policyQueryController.getUserPolicies(1L);
         assertEquals(1, result.size());
     }
 
     @Test
     void testGetAllUserPolicies() {
-        when(queryService.getAllUserPolicies()).thenReturn(Collections.singletonList(new UserPolicyResponseDTO()));
+        when(policyQueryService.getAllUserPolicies()).thenReturn(Collections.singletonList(new UserPolicyResponseDTO()));
 
-        List<UserPolicyResponseDTO> result = queryController.getAllUserPolicies();
+        List<UserPolicyResponseDTO> result = policyQueryController.getAllUserPolicies();
         assertEquals(1, result.size());
     }
 
     @Test
     void testGetPolicyStats() {
         PolicyStatsDTO stats = new PolicyStatsDTO();
-        when(queryService.getPolicyStats()).thenReturn(stats);
+        when(policyQueryService.getPolicyStats()).thenReturn(stats);
 
-        ResponseEntity<PolicyStatsDTO> result = queryController.getPolicyStats();
+        ResponseEntity<PolicyStatsDTO> result = policyQueryController.getPolicyStats();
         assertEquals(200, result.getStatusCode().value());
         assertEquals(stats, result.getBody());
     }

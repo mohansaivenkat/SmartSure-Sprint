@@ -35,15 +35,22 @@ export function ErrorMessage({ message, onRetry }) {
   );
 }
 
-export function EmptyState({ icon: Icon, title, description, action }) {
+export function EmptyState({ icon: Icon, title, subtitle, description, action }) {
+  const content = description || subtitle;
   return (
-    <div className="flex flex-col items-center justify-center py-16 animate-fade-in">
-      <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-        style={{ backgroundColor: 'var(--color-primary)10' }}>
-        <Icon className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
-      </div>
+    <div className="flex flex-col items-center justify-center py-16 animate-fade-in text-center px-4">
+      {Icon && (
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+          style={{ backgroundColor: 'var(--color-primary)10' }}>
+          <Icon className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
+        </div>
+      )}
       <p className="text-lg font-semibold mb-1" style={{ color: 'var(--color-text)' }}>{title}</p>
-      <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>{description}</p>
+      {content && (
+        <p className="text-sm mb-6 max-w-xs mx-auto" style={{ color: 'var(--color-text-secondary)' }}>
+          {content}
+        </p>
+      )}
       {action}
     </div>
   );

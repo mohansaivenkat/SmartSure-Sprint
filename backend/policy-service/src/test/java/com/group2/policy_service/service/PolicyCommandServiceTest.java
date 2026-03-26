@@ -82,14 +82,14 @@ public class PolicyCommandServiceTest {
     @Test
     void testPurchasePolicy() {
         Authentication auth = mock(Authentication.class);
-        when(auth.getPrincipal()).thenReturn(200L);
+        when(auth.getPrincipal()).thenReturn(100L);
         SecurityContext context = mock(SecurityContext.class);
         when(context.getAuthentication()).thenReturn(auth);
         SecurityContextHolder.setContext(context);
 
         when(policyRepository.findById(10L)).thenReturn(Optional.of(mockPolicy));
-        when(userPolicyRepository.save(any(UserPolicy.class))).thenReturn(new UserPolicy());
-        when(mapper.mapToUserPolicyResponse(any())).thenReturn(new UserPolicyResponseDTO());
+        when(userPolicyRepository.save(any(UserPolicy.class))).thenReturn(mockUserPolicy);
+        when(mapper.mapToUserPolicyResponse(any(UserPolicy.class))).thenReturn(new UserPolicyResponseDTO());
 
         UserPolicyResponseDTO response = policyCommandService.purchasePolicy(10L);
 
@@ -105,7 +105,7 @@ public class PolicyCommandServiceTest {
         
         when(policyTypeRepository.findById(1L)).thenReturn(Optional.of(new PolicyType()));
         when(policyRepository.save(any(Policy.class))).thenReturn(mockPolicy);
-        when(mapper.mapToPolicyResponse(any())).thenReturn(new PolicyResponseDTO());
+        when(mapper.mapToPolicyResponse(any(Policy.class))).thenReturn(new PolicyResponseDTO());
 
         PolicyResponseDTO response = policyCommandService.createPolicy(dto);
 
@@ -144,24 +144,26 @@ public class PolicyCommandServiceTest {
         policyCommandService.deletePolicy(10L);
 
         verify(policyRepository, times(1)).save(mockPolicy);
+        assertEquals(false, mockPolicy.isActive());
     }
 
     @Test
     void testRequestCancellation() {
         Authentication auth = mock(Authentication.class);
-        when(auth.getPrincipal()).thenReturn(100L); // Matches mockUserPolicy.getUserId()
+        when(auth.getPrincipal()).thenReturn(100L);
         SecurityContext context = mock(SecurityContext.class);
         when(context.getAuthentication()).thenReturn(auth);
         SecurityContextHolder.setContext(context);
 
         when(userPolicyRepository.findById(5L)).thenReturn(Optional.of(mockUserPolicy));
-        when(mapper.mapToUserPolicyResponse(any())).thenReturn(new UserPolicyResponseDTO());
+        when(mapper.mapToUserPolicyResponse(any(UserPolicy.class))).thenReturn(new UserPolicyResponseDTO());
 
         UserPolicyResponseDTO response = policyCommandService.requestCancellation(5L);
 
         assertNotNull(response);
         assertEquals(PolicyStatus.PENDING_CANCELLATION, mockUserPolicy.getStatus());
         verify(userPolicyRepository, times(1)).save(mockUserPolicy);
+        verify(rabbitTemplate, times(1)).convertAndSend(any(String.class), any(String.class), any(Object.class));
     }
 
     @Test
