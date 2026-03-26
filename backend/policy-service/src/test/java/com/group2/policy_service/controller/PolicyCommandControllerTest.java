@@ -1,6 +1,7 @@
 package com.group2.policy_service.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -39,16 +40,6 @@ public class PolicyCommandControllerTest {
     }
 
     @Test
-    void testRequestCancellation() {
-        UserPolicyResponseDTO response = new UserPolicyResponseDTO();
-        when(policyCommandService.requestCancellation(1L)).thenReturn(response);
-
-        ResponseEntity<UserPolicyResponseDTO> result = policyCommandController.requestCancellation(1L);
-        assertEquals(200, result.getStatusCode().value());
-        assertEquals(response, result.getBody());
-    }
-
-    @Test
     void testCreatePolicy() {
         PolicyResponseDTO response = new PolicyResponseDTO();
         when(policyCommandService.createPolicy(any(PolicyRequestDTO.class))).thenReturn(response);
@@ -73,6 +64,16 @@ public class PolicyCommandControllerTest {
         policyCommandController.deletePolicy(1L);
 
         verify(policyCommandService, times(1)).deletePolicy(1L);
+    }
+
+    @Test
+    void testRequestCancellation() {
+        UserPolicyResponseDTO response = new UserPolicyResponseDTO();
+        when(policyCommandService.requestCancellation(1L)).thenReturn(response);
+
+        ResponseEntity<UserPolicyResponseDTO> result = policyCommandController.requestCancellation(1L);
+        assertEquals(200, result.getStatusCode().value());
+        assertEquals(response, result.getBody());
     }
 
     @Test

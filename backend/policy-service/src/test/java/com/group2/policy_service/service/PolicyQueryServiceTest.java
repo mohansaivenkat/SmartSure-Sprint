@@ -2,8 +2,10 @@ package com.group2.policy_service.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +21,7 @@ import com.group2.policy_service.dto.PolicyResponseDTO;
 import com.group2.policy_service.dto.PolicyStatsDTO;
 import com.group2.policy_service.dto.UserPolicyResponseDTO;
 import com.group2.policy_service.entity.Policy;
+import com.group2.policy_service.entity.PolicyType;
 import com.group2.policy_service.entity.UserPolicy;
 import com.group2.policy_service.repository.PolicyRepository;
 import com.group2.policy_service.repository.PolicyTypeRepository;
@@ -62,7 +65,7 @@ public class PolicyQueryServiceTest {
     @Test
     void testGetPoliciesByUserId() {
         when(userPolicyRepository.findByUserId(100L)).thenReturn(Collections.singletonList(mockUserPolicy));
-        when(mapper.mapToUserPolicyResponse(mockUserPolicy)).thenReturn(new UserPolicyResponseDTO());
+        when(mapper.mapToUserPolicyResponse(any())).thenReturn(new UserPolicyResponseDTO());
 
         List<UserPolicyResponseDTO> result = policyQueryService.getPoliciesByUserId(100L);
 
@@ -72,11 +75,20 @@ public class PolicyQueryServiceTest {
     @Test
     void testGetAllPolicies() {
         when(policyRepository.findByActiveTrue()).thenReturn(Collections.singletonList(mockPolicy));
-        when(mapper.mapToPolicyResponse(mockPolicy)).thenReturn(new PolicyResponseDTO());
+        when(mapper.mapToPolicyResponse(any())).thenReturn(new PolicyResponseDTO());
 
         List<PolicyResponseDTO> result = policyQueryService.getAllPolicies();
 
         assertEquals(1, result.size());
+    }
+
+    @Test
+    void testGetAllPolicyTypes() {
+        when(policyTypeRepository.findAll()).thenReturn(Arrays.asList(new PolicyType(), new PolicyType()));
+
+        List<PolicyType> types = policyQueryService.getAllPolicyTypes();
+
+        assertEquals(2, types.size());
     }
 
     @Test
@@ -93,10 +105,20 @@ public class PolicyQueryServiceTest {
     @Test
     void testGetPolicyById() {
         when(policyRepository.findById(10L)).thenReturn(Optional.of(mockPolicy));
-        when(mapper.mapToPolicyResponse(mockPolicy)).thenReturn(new PolicyResponseDTO());
+        when(mapper.mapToPolicyResponse(any())).thenReturn(new PolicyResponseDTO());
 
         PolicyResponseDTO result = policyQueryService.getPolicyById(10L);
 
         assertNotNull(result);
+    }
+
+    @Test
+    void testGetAllUserPolicies() {
+        when(userPolicyRepository.findAll()).thenReturn(Collections.singletonList(mockUserPolicy));
+        when(mapper.mapToUserPolicyResponse(any())).thenReturn(new UserPolicyResponseDTO());
+
+        List<UserPolicyResponseDTO> result = policyQueryService.getAllUserPolicies();
+
+        assertEquals(1, result.size());
     }
 }

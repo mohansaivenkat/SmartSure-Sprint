@@ -62,6 +62,14 @@ public class PolicyQueryControllerTest {
     }
 
     @Test
+    void testGetAllUserPolicies() {
+        when(policyQueryService.getAllUserPolicies()).thenReturn(Collections.singletonList(new UserPolicyResponseDTO()));
+
+        List<UserPolicyResponseDTO> result = policyQueryController.getAllUserPolicies();
+        assertEquals(1, result.size());
+    }
+
+    @Test
     void testGetPolicyStats() {
         PolicyStatsDTO stats = new PolicyStatsDTO();
         when(policyQueryService.getPolicyStats()).thenReturn(stats);

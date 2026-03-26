@@ -2,6 +2,7 @@ package com.group2.policy_service.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -97,24 +98,6 @@ public class PolicyCommandServiceTest {
     }
 
     @Test
-    void testRequestCancellation() {
-        Authentication auth = mock(Authentication.class);
-        when(auth.getPrincipal()).thenReturn(100L);
-        SecurityContext context = mock(SecurityContext.class);
-        when(context.getAuthentication()).thenReturn(auth);
-        SecurityContextHolder.setContext(context);
-
-        when(userPolicyRepository.findById(5L)).thenReturn(Optional.of(mockUserPolicy));
-        when(mapper.mapToUserPolicyResponse(any(UserPolicy.class))).thenReturn(new UserPolicyResponseDTO());
-
-        UserPolicyResponseDTO response = policyCommandService.requestCancellation(5L);
-
-        assertNotNull(response);
-        assertEquals(PolicyStatus.PENDING_CANCELLATION, mockUserPolicy.getStatus());
-        verify(rabbitTemplate, times(1)).convertAndSend(any(String.class), any(String.class), any(Object.class));
-    }
-
-    @Test
     void testCreatePolicy() {
         PolicyRequestDTO dto = new PolicyRequestDTO();
         dto.setPolicyTypeId(1L);
@@ -131,6 +114,30 @@ public class PolicyCommandServiceTest {
     }
 
     @Test
+    void testCreatePolicy_TypeNotFound() {
+        PolicyRequestDTO dto = new PolicyRequestDTO();
+        dto.setPolicyTypeId(99L);
+        
+        when(policyTypeRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> policyCommandService.createPolicy(dto));
+    }
+
+    @Test
+    void testUpdatePolicy() {
+        PolicyRequestDTO dto = new PolicyRequestDTO();
+        dto.setPolicyName("Updated Plan");
+
+        when(policyRepository.findById(10L)).thenReturn(Optional.of(mockPolicy));
+        when(mapper.mapToPolicyResponse(any())).thenReturn(new PolicyResponseDTO());
+        
+        PolicyResponseDTO response = policyCommandService.updatePolicy(10L, dto);
+
+        assertNotNull(response);
+        verify(policyRepository, times(1)).save(mockPolicy);
+    }
+
+    @Test
     void testDeletePolicy() {
         when(policyRepository.findById(10L)).thenReturn(Optional.of(mockPolicy));
 
@@ -138,5 +145,51 @@ public class PolicyCommandServiceTest {
 
         verify(policyRepository, times(1)).save(mockPolicy);
         assertEquals(false, mockPolicy.isActive());
+    }
+
+    @Test
+    void testRequestCancellation() {
+        Authentication auth = mock(Authentication.class);
+        when(auth.getPrincipal()).thenReturn(100L);
+        SecurityContext context = mock(SecurityContext.class);
+        when(context.getAuthentication()).thenReturn(auth);
+        SecurityContextHolder.setContext(context);
+
+        when(userPolicyRepository.findById(5L)).thenReturn(Optional.of(mockUserPolicy));
+        when(mapper.mapToUserPolicyResponse(any(UserPolicy.class))).thenReturn(new UserPolicyResponseDTO());
+
+        UserPolicyResponseDTO response = policyCommandService.requestCancellation(5L);
+
+        assertNotNull(response);
+        assertEquals(PolicyStatus.PENDING_CANCELLATION, mockUserPolicy.getStatus());
+        verify(userPolicyRepository, times(1)).save(mockUserPolicy);
+        verify(rabbitTemplate, times(1)).convertAndSend(any(String.class), any(String.class), any(Object.class));
+    }
+
+    @Test
+    void testApproveCancellation() {
+        mockUserPolicy.setStatus(PolicyStatus.PENDING_CANCELLATION);
+        mockUserPolicy.setOutstandingBalance(0.0);
+        when(userPolicyRepository.findById(5L)).thenReturn(Optional.of(mockUserPolicy));
+        when(mapper.mapToUserPolicyResponse(any())).thenReturn(new UserPolicyResponseDTO());
+
+        UserPolicyResponseDTO response = policyCommandService.approveCancellation(5L);
+
+        assertNotNull(response);
+        assertEquals(PolicyStatus.CANCELLED, mockUserPolicy.getStatus());
+        verify(userPolicyRepository, times(1)).save(mockUserPolicy);
+    }
+
+    @Test
+    void testPayPremium() {
+        mockUserPolicy.setOutstandingBalance(500.0);
+        when(userPolicyRepository.findById(5L)).thenReturn(Optional.of(mockUserPolicy));
+        when(mapper.mapToUserPolicyResponse(any())).thenReturn(new UserPolicyResponseDTO());
+
+        UserPolicyResponseDTO response = policyCommandService.payPremium(5L, 200.0);
+
+        assertNotNull(response);
+        assertEquals(300.0, mockUserPolicy.getOutstandingBalance());
+        verify(userPolicyRepository, times(1)).save(mockUserPolicy);
     }
 }

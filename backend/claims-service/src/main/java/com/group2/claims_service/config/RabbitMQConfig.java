@@ -21,6 +21,11 @@ public class RabbitMQConfig {
 
     public static final String CLAIM_CREATED_ROUTING_KEY = "claim.created";
     public static final String CLAIM_REVIEW_ROUTING_KEY = "claim.review";
+    
+    // New: Policy Cancellation Saga
+    public static final String CANCELLATION_QUEUE = "policy.cancellation.queue";
+    public static final String POLICY_EXCHANGE = "policy.exchange";
+    public static final String CANCELLATION_ROUTING_KEY = "policy.cancellation";
 
     public static final String POLICY_EXCHANGE = "policy.exchange";
     public static final String CANCELLATION_QUEUE = "policy.cancellation.queue";
@@ -29,6 +34,11 @@ public class RabbitMQConfig {
     @Bean
     public TopicExchange exchange() {
         return new TopicExchange(EXCHANGE);
+    }
+    
+    @Bean
+    public org.springframework.amqp.core.DirectExchange policyExchange() {
+        return new org.springframework.amqp.core.DirectExchange(POLICY_EXCHANGE);
     }
 
     @Bean
@@ -44,6 +54,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue claimReviewQueue() {
         return new Queue(CLAIM_REVIEW_QUEUE, true);
+    }
+    
+    @Bean
+    public Queue cancellationQueue() {
+        return new Queue(CANCELLATION_QUEUE, true);
     }
 
     @Bean
