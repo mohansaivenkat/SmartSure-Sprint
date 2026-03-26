@@ -3,15 +3,7 @@
     <!-- App Name -->
     <springProperty scope="context" name="appName" source="spring.application.name"/>
 
-    <springProperty scope="context" name="logstashHost" source="logstash.host" defaultValue="localhost"/>
-    
-    <!-- LOGSTASH TCP -->
-    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <destination>${logstashHost}:5000</destination>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>{"service":"${appName}"}</customFields>
-        </encoder>
-    </appender>
+
 
     <!-- CONSOLE -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -41,7 +33,6 @@
 
     <!-- ROOT -->
     <root level="INFO">
-        <appender-ref ref="LOGSTASH"/>
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </root>
