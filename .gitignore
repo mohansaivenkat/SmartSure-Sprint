@@ -48,3 +48,5 @@ frontend/.env
 # Coverage reports
 coverage/
 jacoco.exec
+
+backend/all_application_properties.txt
