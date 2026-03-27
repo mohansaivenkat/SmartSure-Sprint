@@ -6,7 +6,10 @@ import org.springframework.stereotype.Component;
 import com.group2.claims_service.dto.ClaimReviewEvent;
 import com.group2.claims_service.service.ClaimService;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Component
+@Slf4j
 public class ClaimReviewListener {
 
     private final ClaimService claimService;
@@ -17,21 +20,16 @@ public class ClaimReviewListener {
 
     @RabbitListener(queues = "claim.review.queue")
     public void handleClaimReview(ClaimReviewEvent request) {
-
+        log.info("Received claim review event - claimId: {}, status: {}", request.getClaimId(), request.getStatus());
         try {
             claimService.updateClaimStatus(
                     request.getClaimId(),
                     request.getStatus()
             );
-
-            System.out.println("✅ Claim updated via RabbitMQ");
-
+            log.info("Claim {} updated to status {} successfully", request.getClaimId(), request.getStatus());
         } catch (Exception e) {
-
-            System.out.println("❌ Error processing message: " + e.getMessage());
-
-            // VERY IMPORTANT: Don't throw exception
-            // Otherwise it will retry infinitely
+            // Log full exception — NEVER hide errors silently
+            log.error("Error processing claim review event for claimId {}: {}", request.getClaimId(), e.getMessage(), e);
         }
     }
 }

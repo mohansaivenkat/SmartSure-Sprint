@@ -2,6 +2,7 @@ package com.group2.auth_service.service;
 
 import java.util.Optional;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
@@ -10,8 +11,11 @@ import jakarta.transaction.Transactional;
 import com.group2.auth_service.dto.AuthResponse;
 import com.group2.auth_service.dto.LoginRequest;
 import com.group2.auth_service.dto.RegisterRequest;
+import com.group2.auth_service.dto.ResetPasswordRequest;
+import com.group2.auth_service.dto.UserProfileRequest;
 import com.group2.auth_service.entity.Role;
 import com.group2.auth_service.entity.User;
+import com.group2.auth_service.feign.NotificationClient;
 import com.group2.auth_service.repository.AuthServiceRepository;
 import com.group2.auth_service.security.JwtUtil;
 
@@ -21,11 +25,13 @@ public class AuthService {
 	private final AuthServiceRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtUtil jwtUtil;
+	private final NotificationClient notificationClient;
 
-	public AuthService(AuthServiceRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+	public AuthService(AuthServiceRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil, NotificationClient notificationClient) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtUtil = jwtUtil;
+		this.notificationClient = notificationClient;
 	}
 	
 	@PostConstruct
@@ -51,6 +57,14 @@ public class AuthService {
             throw new com.group2.auth_service.exception.UserAlreadyExistsException("Email is already registered.");
         } 
         
+        // Verify OTP was verified in Notification Service
+        Boolean isVerified = notificationClient.isOtpVerified(request.getEmail()).getBody();
+        if (Boolean.FALSE.equals(isVerified)) {
+            throw new RuntimeException("OTP not verified for registration.");
+        }
+        
+        notificationClient.markOtpAsUsed(request.getEmail());
+
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
@@ -75,6 +89,55 @@ public class AuthService {
 	    }
 	    throw new RuntimeException("Invalid credentials");
 	}
+
+    public void sendRegistrationOtp(String email) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new com.group2.auth_service.exception.UserAlreadyExistsException("Email is already registered.");
+        }
+        notificationClient.sendOtp(email);
+    }
+
+    public void verifyOtp(String email, String otp) {
+        notificationClient.verifyOtp(email, otp);
+    }
+
+    public void sendForgotPasswordOtp(String email) {
+        if (userRepository.findByEmail(email).isEmpty()) {
+            throw new RuntimeException("User with this email does not exist.");
+        }
+        notificationClient.sendOtp(email);
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        Boolean isVerified = notificationClient.isOtpVerified(request.getEmail()).getBody();
+        if (Boolean.FALSE.equals(isVerified)) {
+            throw new RuntimeException("OTP not verified for password reset.");
+        }
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        
+        notificationClient.markOtpAsUsed(request.getEmail());
+    }
+
+    @Transactional
+    public User updateProfile(UserProfileRequest request) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Long userId = (principal instanceof Long) ? (Long) principal : Long.parseLong(principal.toString());
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setName(request.getName());
+        user.setPhone(request.getPhone());
+        user.setAddress(request.getAddress());
+        
+        return userRepository.save(user);
+    }
 
 	public User getUserById(Long id) {
 	    return userRepository.findById(id)

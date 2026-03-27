@@ -32,9 +32,14 @@ API.interceptors.response.use(
 
 // ==================== AUTH SERVICE ====================
 export const authAPI = {
-  login: (data) => API.post('/auth-service/api/auth/login', data),  register: (data) => API.post('/auth-service/api/auth/register', data),
+  login: (data) => API.post('/auth-service/api/auth/login', data),
+  register: (data) => API.post('/auth-service/api/auth/register', data),
   sendOtp: (email) => API.post(`/auth-service/api/auth/send-otp?email=${email}`),
   verifyOtp: (email, otp) => API.post(`/auth-service/api/auth/verify-otp?email=${email}&otp=${otp}`),
+  forgotPasswordSendOtp: (email) => API.post(`/auth-service/api/auth/forgot-password/send-otp?email=${email}`),
+  forgotPasswordVerifyOtp: (email, otp) => API.post(`/auth-service/api/auth/forgot-password/verify-otp?email=${email}&otp=${otp}`),
+  resetPassword: (data) => API.post('/auth-service/api/auth/reset-password', data),
+  updateProfile: (data) => API.put('/auth-service/api/auth/profile', data),
   getUserById: (id, config) => API.get(`/auth-service/api/auth/users/${id}`, config),
 };
 

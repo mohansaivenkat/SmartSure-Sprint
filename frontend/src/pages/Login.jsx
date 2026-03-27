@@ -133,6 +133,11 @@ export default function Login() {
                   </button>
                 </div>
               </div>
+              <div className="flex justify-end">
+                <Link to="/forgot-password" style={{ color: 'var(--color-primary)', fontSize: '0.85rem' }} className="font-semibold hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             <button

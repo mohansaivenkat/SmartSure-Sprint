@@ -7,6 +7,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 
 import com.group2.claims_service.dto.ClaimCreatedEvent;
 import com.group2.claims_service.dto.ClaimRequestDTO;
@@ -20,18 +21,21 @@ import com.group2.claims_service.repository.ClaimDocumentRepository;
 import com.group2.claims_service.repository.ClaimRepository;
 
 @Service
+@Slf4j
 public class ClaimService {
 	
 	private final ClaimRepository claimRepository;
 	private final ClaimDocumentRepository documentRepository;
+	private final com.group2.claims_service.feign.AuthClient authClient;
 	
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
 	
 	
-	public ClaimService(ClaimRepository claimRepository, ClaimDocumentRepository documentRepository) {
+	public ClaimService(ClaimRepository claimRepository, ClaimDocumentRepository documentRepository, com.group2.claims_service.feign.AuthClient authClient) {
 		this.claimRepository = claimRepository;
 		this.documentRepository = documentRepository;
+		this.authClient = authClient;
 	}
 	
 	public ClaimResponseDTO initateClaim(ClaimRequestDTO requestDTO) {
@@ -180,7 +184,8 @@ public class ClaimService {
 		ClaimStatus currentStatus = claim.getClaimStatus();
 		boolean validTransition = switch (targetStatus) {
 			case UNDER_REVIEW -> currentStatus == ClaimStatus.SUBMITTED || currentStatus == ClaimStatus.CLOSED;
-			case APPROVED, REJECTED -> currentStatus == ClaimStatus.UNDER_REVIEW;
+			case APPROVED, REJECTED -> currentStatus == ClaimStatus.UNDER_REVIEW
+					|| currentStatus == ClaimStatus.SUBMITTED;  // allow direct approval from SUBMITTED
 			case CLOSED -> currentStatus == ClaimStatus.APPROVED || currentStatus == ClaimStatus.REJECTED;
 			default -> false;
 		};
@@ -192,6 +197,24 @@ public class ClaimService {
 
 		claim.setClaimStatus(targetStatus);
 		claimRepository.save(claim);
+
+		if (targetStatus == ClaimStatus.APPROVED || targetStatus == ClaimStatus.REJECTED) {
+			log.info("Status transition to {}, publishing notification event for claimId: {}", targetStatus, claimId);
+			try {
+				com.group2.claims_service.feign.UserDTO user = authClient.getUserById(claim.getUserId());
+				if (user != null && user.getEmail() != null) {
+					String subject = "Claim " + targetStatus;
+					String body = "Your claim with ID " + claim.getId() + " has been " + targetStatus + ".";
+					com.group2.claims_service.dto.NotificationEvent evt = new com.group2.claims_service.dto.NotificationEvent(user.getEmail(), subject, body);
+					rabbitTemplate.convertAndSend("notification.exchange", "notification.email", evt);
+					log.info("Published notification event for claimId: {} to RabbitMQ", claimId);
+				} else {
+					log.warn("Could not find user email for userId: {}, claim notification skipped", claim.getUserId());
+				}
+			} catch(Exception e) {
+				log.error("Failed to send notification event for claimId {}: {}", claimId, e.getMessage());
+			}
+		}
 	}
 	
 	// Get all claims for a specific user

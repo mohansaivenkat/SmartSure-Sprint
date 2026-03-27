@@ -8,12 +8,14 @@ import java.util.List;
 @Component
 public class RouteValidator {
 
-    // Endpoints that do NOT require JWT authentication
     public static final List<String> OPEN_API_ENDPOINTS = List.of(
             "/api/auth/register",
             "/api/auth/login",
             "/api/auth/send-otp",
             "/api/auth/verify-otp",
+            "/api/auth/forgot-password/send-otp",
+            "/api/auth/forgot-password/verify-otp",
+            "/api/auth/reset-password",
             "/v3/api-docs",
             "/swagger-ui",
             "/swagger-ui.html",

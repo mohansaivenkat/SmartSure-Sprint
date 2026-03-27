@@ -23,14 +23,17 @@ import com.group2.policy_service.repository.PolicyRepository;
 import com.group2.policy_service.repository.PolicyTypeRepository;
 import com.group2.policy_service.repository.UserPolicyRepository;
 import com.group2.policy_service.util.PolicyMapper;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class PolicyCommandService {
 
     private final PolicyRepository policyRepository;
     private final UserPolicyRepository userPolicyRepository;
     private final PolicyTypeRepository policyTypeRepository;
     private final PolicyMapper mapper;
+    private final com.group2.policy_service.feign.AuthClient authClient;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -38,11 +41,13 @@ public class PolicyCommandService {
     public PolicyCommandService(PolicyRepository policyRepository,
                                UserPolicyRepository userPolicyRepository,
                                PolicyTypeRepository policyTypeRepository,
-                               PolicyMapper mapper) {
+                               PolicyMapper mapper,
+                               com.group2.policy_service.feign.AuthClient authClient) {
         this.policyRepository = policyRepository;
         this.userPolicyRepository = userPolicyRepository;
         this.policyTypeRepository = policyTypeRepository;
         this.mapper = mapper;
+        this.authClient = authClient;
     }
 
     @Transactional
@@ -111,6 +116,23 @@ public class PolicyCommandService {
 
         userPolicy.setStatus(PolicyStatus.CANCELLED);
         userPolicyRepository.save(userPolicy);
+
+        try {
+            com.group2.policy_service.feign.UserDTO user = authClient.getUserById(userPolicy.getUserId());
+            if (user != null && user.getEmail() != null) {
+                log.info("Publishing policy cancellation notification for user: {}", user.getEmail());
+                String subject = "Policy Cancelled";
+                String body = "Your policy with ID " + userPolicy.getPolicy().getId() + " has been successfully cancelled.";
+                com.group2.policy_service.dto.NotificationEvent evt = new com.group2.policy_service.dto.NotificationEvent(user.getEmail(), subject, body);
+                rabbitTemplate.convertAndSend("notification.exchange", "notification.email", evt);
+                log.info("Policy cancellation event published successfully");
+            } else {
+                log.warn("User or email not found for userId: {}, skipping notification", userPolicy.getUserId());
+            }
+        } catch(Exception e) {
+            log.error("Failed to send policy cancellation notification: {}", e.getMessage());
+        }
+
         return mapper.mapToUserPolicyResponse(userPolicy);
     }
 

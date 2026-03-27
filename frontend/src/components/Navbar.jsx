@@ -259,6 +259,7 @@ export default function Navbar() {
     { to: '/policies',    label: 'Policies',     icon: HiDocumentText },
     { to: '/my-policies', label: 'Purchased',  icon: HiClipboardList },
     { to: '/my-claims',   label: 'Claims',    icon: HiClipboardList },
+    { to: '/profile',     label: 'Profile',   icon: HiUser },
   ];
 
   const adminLinks = [
@@ -267,6 +268,7 @@ export default function Navbar() {
     { to: '/admin/subscriptions', label: 'Subscriptions',icon: HiClipboardList },
     { to: '/admin/claims',        label: 'Claims',        icon: HiClipboardList },
     { to: '/admin/reports',       label: 'Reports',       icon: HiChartBar },
+    { to: '/profile',             label: 'Profile',       icon: HiUser },
   ];
 
   const links = isAdmin() ? adminLinks : customerLinks;

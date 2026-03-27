@@ -10,10 +10,13 @@ import io.swagger.v3.oas.annotations.servers.Server;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import org.springframework.cloud.openfeign.EnableFeignClients;
+
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableScheduling
 @EnableCaching
+@EnableFeignClients
 @OpenAPIDefinition(servers = @Server(url = "/policy-service", description = "Policy Service via API Gateway"))
 public class PolicyServiceApplication {
 

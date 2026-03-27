@@ -6,8 +6,14 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 
 // Pages
+import Home from './pages/Home';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Terms from './pages/Terms';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import Profile from './pages/Profile';
 import Dashboard from './pages/Dashboard';
 import Policies from './pages/Policies';
 import MyPolicies from './pages/MyPolicies';
@@ -26,8 +32,16 @@ function AppContent() {
       {user && <Navbar />}
       <Routes>
         {/* Public Routes */}
+        <Route path="/" element={user ? <Navigate to={user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard'} /> : <Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/login" element={user ? <Navigate to={user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard'} /> : <Login />} />
         <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
+        <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" /> : <ForgotPassword />} />
+
+        {/* Private Routes (Common) */}
+        <Route path="/profile" element={<ProtectedRoute allowedRoles={['CUSTOMER', 'ADMIN']}><Profile /></ProtectedRoute>} />
 
         {/* Customer Routes */}
         <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['CUSTOMER']}><Dashboard /></ProtectedRoute>} />
@@ -43,8 +57,7 @@ function AppContent() {
         <Route path="/admin/subscriptions" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSubscriptions /></ProtectedRoute>} />
 
         {/* Default */}
-        <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       {user && <div className="mob-only tab-spacer" style={{ height: '68px' }} />}
     </div>
