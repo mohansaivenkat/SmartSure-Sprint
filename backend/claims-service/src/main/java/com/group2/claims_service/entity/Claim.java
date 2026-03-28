@@ -11,8 +11,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 
+import lombok.Getter;
+import lombok.Setter;
+
 @Entity
-public class Claim {
+@Getter
+@Setter
+public class Claim extends BaseEntity {
 	
 	@Id
 	@GeneratedValue(strategy=GenerationType.AUTO)
@@ -24,8 +29,6 @@ public class Claim {
 	
 	@Enumerated(EnumType.STRING)
 	private ClaimStatus claimStatus;
-	
-	private LocalDateTime createdAt;
 
 	
 	public Long getId() {
@@ -76,19 +79,10 @@ public class Claim {
 		this.claimStatus = claimStatus;
 	}
 
-	public LocalDateTime getCreatedAt() {
-		return createdAt;
-	}
-
-	public void setCreatedAt(LocalDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
-	
-
 	@Override
 	public String toString() {
 		return "Claim [id=" + id + ", policyId=" + policyId + ", userId=" + userId + ", claimAmount=" + claimAmount
-				+ ", description=" + description + ", claimStatus=" + claimStatus + ", createdAt=" + createdAt + "]";
+				+ ", description=" + description + ", claimStatus=" + claimStatus + ", createdAt=" + getCreatedAt() + "]";
 	}
 	
 	

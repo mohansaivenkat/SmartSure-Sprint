@@ -17,8 +17,8 @@ import com.group2.auth_service.dto.LoginRequest;
 import com.group2.auth_service.dto.RegisterRequest;
 import com.group2.auth_service.dto.ResetPasswordRequest;
 import com.group2.auth_service.dto.UserProfileRequest;
-import com.group2.auth_service.entity.User;
-import com.group2.auth_service.service.AuthService;
+import com.group2.auth_service.dto.UserResponseDTO;
+import com.group2.auth_service.service.IAuthService;
 
 import jakarta.validation.Valid;
 
@@ -26,9 +26,9 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/auth")
 public class AuthController {
 	
-	private final AuthService service;
+	private final IAuthService service;
 
-	public AuthController(AuthService service) {
+	public AuthController(IAuthService service) {
 		this.service = service;
 	}
 
@@ -38,7 +38,7 @@ public class AuthController {
     }
     
     @PostMapping("/register")
-    public ResponseEntity<User> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<UserResponseDTO> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(service.register(request));
     }
     
@@ -73,17 +73,17 @@ public class AuthController {
     }
 
     @PutMapping("/profile")
-    public ResponseEntity<User> updateProfile(@RequestBody UserProfileRequest request) {
+    public ResponseEntity<UserResponseDTO> updateProfile(@RequestBody UserProfileRequest request) {
         return ResponseEntity.ok(service.updateProfile(request));
     }
 
     @GetMapping("/users/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getUserById(id));
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
         return ResponseEntity.ok(service.getAllUsers());
     }
 }

@@ -120,8 +120,8 @@ export function PageHeader({ title, subtitle, action }) {
 export function Card({ children, className = '', onClick, hoverable = false }) {
   return (
     <div
-      className={`rounded-2xl p-5 transition-all duration-300 ${hoverable ? 'cursor-pointer hover:scale-[1.01] hover:shadow-lg' : ''} ${className}`}
-      style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+      className={`rounded-2xl p-5 transition-all duration-300 ${hoverable ? 'cursor-pointer hover:scale-[1.01] hover:shadow-xl' : 'shadow-sm'} ${className}`}
+      style={{ backgroundColor: 'var(--color-surface)' }}
       onClick={onClick}
     >
       {children}
@@ -187,7 +187,6 @@ export function Input({ label, error, ...props }) {
         className="w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-200 focus:ring-2"
         style={{
           backgroundColor: 'var(--color-bg)',
-          border: `1px solid ${error ? 'var(--color-danger)' : 'var(--color-border)'}`,
           color: 'var(--color-text)',
           '--tw-ring-color': 'var(--color-primary)',
         }}
@@ -206,7 +205,6 @@ export function Select({ label, error, children, ...props }) {
         className="w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-200 focus:ring-2"
         style={{
           backgroundColor: 'var(--color-bg)',
-          border: `1px solid ${error ? 'var(--color-danger)' : 'var(--color-border)'}`,
           color: 'var(--color-text)',
         }}
         {...props}
@@ -226,7 +224,6 @@ export function Textarea({ label, error, ...props }) {
         className="w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-200 focus:ring-2 resize-none"
         style={{
           backgroundColor: 'var(--color-bg)',
-          border: `1px solid ${error ? 'var(--color-danger)' : 'var(--color-border)'}`,
           color: 'var(--color-text)',
         }}
         rows={4}

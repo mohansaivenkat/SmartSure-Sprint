@@ -1,13 +1,12 @@
 package com.group2.auth_service.aspect;
 
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterReturning;
-import org.aspectj.lang.annotation.AfterThrowing;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StopWatch;
 
 @Aspect
 @Component
@@ -15,27 +14,27 @@ public class LoggingAspect {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Before("execution(* com.group2.auth_service.controller.*.*(..)) || execution(* com.group2.auth_service.service.*.*(..))")
-    public void logBefore(JoinPoint joinPoint) {
-        logger.info("Entering {}.{}() with arguments = {}", 
-                joinPoint.getSignature().getDeclaringTypeName(),
-                joinPoint.getSignature().getName(),
-                joinPoint.getArgs());
-    }
-
-    @AfterReturning(pointcut = "execution(* com.group2.auth_service.controller.*.*(..)) || execution(* com.group2.auth_service.service.*.*(..))", returning = "result")
-    public void logAfterReturning(JoinPoint joinPoint, Object result) {
-        logger.info("Exiting {}.{}() with result = {}", 
-                joinPoint.getSignature().getDeclaringTypeName(),
-                joinPoint.getSignature().getName(),
-                result);
-    }
-
-    @AfterThrowing(pointcut = "execution(* com.group2.auth_service.controller.*.*(..)) || execution(* com.group2.auth_service.service.*.*(..))", throwing = "e")
-    public void logAfterThrowing(JoinPoint joinPoint, Throwable e) {
-        logger.error("Exception in {}.{}() with cause = {}", 
-                joinPoint.getSignature().getDeclaringTypeName(),
-                joinPoint.getSignature().getName(),
-                e.getCause() != null ? e.getCause() : "NULL");
+    @Around("execution(* com.group2.auth_service.controller.*.*(..)) || execution(* com.group2.auth_service.service..*.*(..))")
+    public Object profile(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        
+        String className = proceedingJoinPoint.getSignature().getDeclaringTypeName();
+        String methodName = proceedingJoinPoint.getSignature().getName();
+        
+        logger.info("Entering {}.{}()", className, methodName);
+        
+        Object result;
+        try {
+            result = proceedingJoinPoint.proceed();
+        } catch (Throwable throwable) {
+            logger.error("Exception in {}.{}() - {}", className, methodName, throwable.getMessage());
+            throw throwable;
+        }
+        
+        stopWatch.stop();
+        logger.info("Exiting {}.{}() - execution time: {} ms", className, methodName, stopWatch.getTotalTimeMillis());
+        
+        return result;
     }
 }

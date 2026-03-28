@@ -1,4 +1,6 @@
-package com.group2.notification_service.service;
+package com.group2.notification_service.service.impl;
+
+import com.group2.notification_service.service.INotificationService;
 
 import java.time.LocalDateTime;
 import java.util.Random;
@@ -22,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Transactional
 @Slf4j
-public class NotificationService {
+public class NotificationServiceImpl implements INotificationService {
 
     private final OtpRepository otpRepository;
     private final JavaMailSender javaMailSender;
@@ -34,7 +36,7 @@ public class NotificationService {
     @Value("${brevo.sender.email}")
     private String senderEmail;
 
-    public NotificationService(OtpRepository otpRepository, JavaMailSender javaMailSender) {
+    public NotificationServiceImpl(OtpRepository otpRepository, JavaMailSender javaMailSender) {
         this.otpRepository = otpRepository;
         this.javaMailSender = javaMailSender;
     }

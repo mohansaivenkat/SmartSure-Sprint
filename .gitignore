@@ -43,6 +43,7 @@ node_modules/
 frontend/build/
 
 # Env
+.env
 frontend/.env
 
 # Coverage reports

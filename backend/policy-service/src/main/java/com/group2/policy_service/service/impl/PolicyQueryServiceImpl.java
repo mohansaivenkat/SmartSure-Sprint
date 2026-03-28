@@ -1,4 +1,6 @@
-package com.group2.policy_service.service;
+package com.group2.policy_service.service.impl;
+
+import com.group2.policy_service.service.IPolicyQueryService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,14 +17,14 @@ import com.group2.policy_service.repository.UserPolicyRepository;
 import com.group2.policy_service.util.PolicyMapper;
 
 @Service
-public class PolicyQueryService {
+public class PolicyQueryServiceImpl implements IPolicyQueryService {
 
     private final PolicyRepository policyRepository;
     private final UserPolicyRepository userPolicyRepository;
     private final PolicyTypeRepository policyTypeRepository;
     private final PolicyMapper mapper;
 
-    public PolicyQueryService(PolicyRepository policyRepository,
+    public PolicyQueryServiceImpl(PolicyRepository policyRepository,
                              UserPolicyRepository userPolicyRepository,
                              PolicyTypeRepository policyTypeRepository, 
                              PolicyMapper mapper) {

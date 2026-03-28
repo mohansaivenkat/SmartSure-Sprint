@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 
 import com.group2.notification_service.config.RabbitMQConfig;
 import com.group2.notification_service.dto.NotificationEvent;
-import com.group2.notification_service.service.NotificationService;
+import com.group2.notification_service.service.INotificationService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,9 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class NotificationEventListener {
 
-    private final NotificationService notificationService;
+    private final INotificationService notificationService;
 
-    public NotificationEventListener(NotificationService notificationService) {
+    public NotificationEventListener(INotificationService notificationService) {
         this.notificationService = notificationService;
     }
 

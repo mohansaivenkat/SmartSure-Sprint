@@ -1,5 +1,6 @@
 package com.group2.policy_service.util;
 
+import com.group2.policy_service.dto.PolicyRequestDTO;
 import com.group2.policy_service.dto.PolicyResponseDTO;
 import com.group2.policy_service.dto.UserPolicyResponseDTO;
 import com.group2.policy_service.entity.Policy;
@@ -9,34 +10,50 @@ import org.springframework.stereotype.Component;
 @Component
 public class PolicyMapper {
 
-    public PolicyResponseDTO mapToPolicyResponse(Policy p) {
+    public Policy mapToEntity(PolicyRequestDTO dto) {
+        if (dto == null) return null;
+        Policy policy = new Policy();
+        policy.setPolicyName(dto.getPolicyName());
+        policy.setDescription(dto.getDescription());
+        policy.setPremiumAmount(dto.getPremiumAmount());
+        policy.setCoverageAmount(dto.getCoverageAmount());
+        policy.setDurationInMonths(dto.getDurationInMonths());
+        policy.setActive(true);
+        return policy;
+    }
+
+    public PolicyResponseDTO mapToPolicyResponse(Policy policy) {
+        if (policy == null) return null;
         PolicyResponseDTO dto = new PolicyResponseDTO();
-        dto.setId(p.getId());
-        dto.setPolicyName(p.getPolicyName());
-        dto.setDescription(p.getDescription());
-        dto.setPremiumAmount(p.getPremiumAmount());
-        dto.setCoverageAmount(p.getCoverageAmount());
-        dto.setDurationInMonths(p.getDurationInMonths());
-        if (p.getPolicyType() != null) {
-            dto.setPolicyTypeId(p.getPolicyType().getId());
-            if (p.getPolicyType().getCategory() != null) {
-                dto.setPolicyCategory(p.getPolicyType().getCategory().toString());
+        dto.setId(policy.getId());
+        dto.setPolicyName(policy.getPolicyName());
+        dto.setDescription(policy.getDescription());
+        dto.setPremiumAmount(policy.getPremiumAmount());
+        dto.setCoverageAmount(policy.getCoverageAmount());
+        dto.setDurationInMonths(policy.getDurationInMonths());
+        if (policy.getPolicyType() != null) {
+            dto.setPolicyTypeId(policy.getPolicyType().getId());
+            if (policy.getPolicyType().getCategory() != null) {
+                dto.setPolicyCategory(policy.getPolicyType().getCategory().name());
             }
         }
         return dto;
     }
 
-    public UserPolicyResponseDTO mapToUserPolicyResponse(UserPolicy up) {
+    public UserPolicyResponseDTO mapToUserPolicyResponse(UserPolicy userPolicy) {
+        if (userPolicy == null) return null;
         UserPolicyResponseDTO dto = new UserPolicyResponseDTO();
-        dto.setId(up.getId());
-        dto.setUserId(up.getUserId());
-        dto.setPolicyName(up.getPolicy() != null ? up.getPolicy().getPolicyName() : "Unknown Policy");
-        dto.setPremiumAmount(up.getPremiumAmount());
-        dto.setStatus(up.getStatus());
-        dto.setStartDate(up.getStartDate());
-        dto.setEndDate(up.getEndDate());
-        dto.setOutstandingBalance(up.getOutstandingBalance());
-        dto.setNextDueDate(up.getNextDueDate());
+        dto.setId(userPolicy.getId());
+        dto.setUserId(userPolicy.getUserId());
+        if (userPolicy.getPolicy() != null) {
+            dto.setPolicyName(userPolicy.getPolicy().getPolicyName());
+            dto.setPremiumAmount(userPolicy.getPolicy().getPremiumAmount());
+        }
+        dto.setStartDate(userPolicy.getStartDate());
+        dto.setEndDate(userPolicy.getEndDate());
+        dto.setStatus(userPolicy.getStatus());
+        dto.setOutstandingBalance(userPolicy.getOutstandingBalance());
+        dto.setNextDueDate(userPolicy.getNextDueDate());
         return dto;
     }
 }

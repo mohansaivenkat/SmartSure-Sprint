@@ -1,19 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { claimsAPI, policyAPI } from '../services/api';
-import { 
-  HiClipboardList, 
-  HiPlus, 
-  HiUpload, 
-  HiCurrencyRupee, 
+import {
+  HiClipboardList,
+  HiPlus,
+  HiUpload,
+  HiCurrencyRupee,
   HiEye,
   HiOutlineCloudUpload,
   HiOutlineDocumentText,
-  HiIdentification
+  HiIdentification,
+  HiChevronLeft,
+  HiChevronRight,
 } from 'react-icons/hi';
 import { PageHeader, Card, Badge, Button, Modal, Input, Textarea, Select } from '../components/UI';
 import LoadingSpinner, { ErrorMessage, EmptyState } from '../components/UI';
 import toast from 'react-hot-toast';
+
+const PER_PAGE_OPTIONS = [5, 10, 20];
 
 export default function MyClaims() {
   const { user } = useAuth();
@@ -28,6 +32,11 @@ export default function MyClaims() {
   const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(5);
+
+  // ── Data fetching ──────────────────────────────────────────────────
   const fetchData = async () => {
     if (!user?.id) return;
     setLoading(true);
@@ -47,12 +56,36 @@ export default function MyClaims() {
     }
   };
 
-  useEffect(() => { 
-    if (user?.id) {
-      fetchData(); 
-    }
+  useEffect(() => {
+    if (user?.id) fetchData();
   }, [user?.id]);
 
+  // Reset to page 1 whenever perPage changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [perPage]);
+
+  // ── Pagination helpers ─────────────────────────────────────────────
+  const totalPages = Math.ceil(claims.length / perPage);
+  const paginatedClaims = claims.slice((currentPage - 1) * perPage, currentPage * perPage);
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      const lo = Math.max(2, currentPage - 1);
+      const hi = Math.min(totalPages - 1, currentPage + 1);
+      if (lo > 2) pages.push('…');
+      for (let i = lo; i <= hi; i++) pages.push(i);
+      if (hi < totalPages - 1) pages.push('…');
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
+  // ── Handlers ───────────────────────────────────────────────────────
   const handleSubmitClaim = async () => {
     if (!claimForm.policyId || !claimForm.claimAmount || !claimForm.description) {
       toast.error('Please fill in all fields');
@@ -69,6 +102,7 @@ export default function MyClaims() {
       toast.success('Claim submitted successfully!');
       setShowNewClaim(false);
       setClaimForm({ policyId: '', claimAmount: '', description: '' });
+      setCurrentPage(1);
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit claim');
@@ -98,7 +132,6 @@ export default function MyClaims() {
       const contentType = res.headers['content-type'] || 'application/octet-stream';
       const blob = new Blob([res.data], { type: contentType });
       const url = window.URL.createObjectURL(blob);
-
       if (contentType.startsWith('image/')) {
         window.open(url, '_blank');
       } else {
@@ -112,16 +145,18 @@ export default function MyClaims() {
     }
   };
 
+  // ── Guards ─────────────────────────────────────────────────────────
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorMessage message={error} onRetry={fetchData} />;
 
+  // ── Render ─────────────────────────────────────────────────────────
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <PageHeader
         title="Claim Center"
         subtitle="Submit, track, and manage your insurance reimbursement claims"
         action={
-          <Button 
+          <Button
             onClick={() => setShowNewClaim(true)}
             className="rounded-full px-6 py-2.5 shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 font-bold"
           >
@@ -143,72 +178,157 @@ export default function MyClaims() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
-          {claims.map((claim) => (
-            <Card key={claim.claimId} className="flex flex-col relative group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-transparent hover:border-opacity-50" style={{ borderColor: 'var(--color-border)' }}>
-              
-              {/* Card Header: IDs & Status */}
-              <div className="flex items-start justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner" style={{ backgroundColor: 'var(--color-bg)' }}>
+        <>
+          {/* ── Claims List ── */}
+          <div className="flex flex-col gap-4">
+            {paginatedClaims.map((claim) => (
+              <div
+                key={claim.claimId}
+                className="flex flex-col sm:flex-row sm:items-center gap-4 px-5 py-5 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md bg-surface"
+              >
+                {/* Left: Icon & Info */}
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-inner mt-0.5"
+                    style={{ backgroundColor: 'var(--color-bg)' }}
+                  >
                     <HiOutlineDocumentText className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
                   </div>
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider mb-0.5" style={{ color: 'var(--color-primary)' }}>Claim #{claim.claimId}</p>
-                    <p className="text-xs font-medium flex items-center gap-1 opacity-70" style={{ color: 'var(--color-text-secondary)' }}>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                      Claim #{claim.claimId}
+                    </p>
+                    <p className="text-xs font-medium flex items-center gap-1 opacity-70 mt-0.5 text-text-secondary">
                       <HiIdentification className="w-3.5 h-3.5" /> Policy #{claim.policyId}
+                    </p>
+                    <p className="text-sm mt-1.5 font-medium truncate text-text-secondary">
+                      {claim.description}
                     </p>
                   </div>
                 </div>
-                <Badge status={claim.status} />
-              </div>
 
-              {/* Description */}
-              <p className="text-sm mb-5 flex-1 line-clamp-3 leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-                {claim.description}
-              </p>
-
-              {/* Highlighted Amount Block */}
-              <div className="flex items-center justify-between p-4 rounded-2xl mb-5 border" 
-                   style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-full" style={{ backgroundColor: 'var(--color-primary)20' }}>
-                    <HiCurrencyRupee className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                {/* Middle/Bottom Flex Container for Mobile */}
+                <div className="flex items-center justify-between sm:justify-end gap-6 pt-3 sm:pt-0 sm:border-t-0">
+                  {/* Amount */}
+                  <div className="text-left sm:text-right shrink-0">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-text-secondary opacity-60">
+                      Amount
+                    </p>
+                    <p className="text-lg font-black tracking-tight flex items-center sm:justify-end gap-0.5 text-text">
+                      <HiCurrencyRupee className="w-4 h-4 text-primary" />
+                      {claim.claimAmount?.toLocaleString()}
+                    </p>
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--color-text-secondary)' }}>Amount</span>
+
+                  {/* Badge */}
+                  <div className="shrink-0">
+                    <Badge status={claim.status} />
+                  </div>
                 </div>
-                <span className="text-xl font-black tracking-tight" style={{ color: 'var(--color-text)' }}>
-                  ₹{claim.claimAmount?.toLocaleString()}
-                </span>
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-3 sm:pt-0 sm:ml-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowUpload(claim.claimId)}
+                    className="flex-1 sm:flex-none rounded-xl font-bold border-dashed hover:border-solid text-xs py-2"
+                    style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+                  >
+                    <HiUpload className="w-3.5 h-3.5 mr-1" /> Upload
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDownloadDoc(claim.claimId)}
+                    className="flex-1 sm:flex-none rounded-xl font-bold text-xs py-2 bg-surface"
+                  >
+                    <HiEye className="w-3.5 h-3.5 mr-1 text-text-secondary" /> View
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Pagination Bar ── */}
+          <div
+            className="flex flex-col sm:flex-row items-center justify-between gap-6 mt-8 px-6 py-5 rounded-2xl shadow-sm bg-surface"
+          >
+            <div className="flex items-center justify-between w-full sm:w-auto gap-8">
+              {/* Per page */}
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-text-secondary">
+                <span>Show</span>
+                <select
+                  value={perPage}
+                  onChange={(e) => setPerPage(Number(e.target.value))}
+                  className="rounded-lg px-2 py-1 bg-bg text-text outline-none focus:ring-1 focus:ring-primary shadow-sm"
+                >
+                  {PER_PAGE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+                <span className="hidden xs:inline">per page</span>
               </div>
 
-              {/* Bottom Action Grid */}
-              <div className="grid grid-cols-2 gap-3 mt-auto pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => setShowUpload(claim.claimId)}
-                  className="rounded-xl font-semibold border-dashed hover:border-solid transition-all"
-                  style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
-                >
-                  <HiUpload className="w-4 h-4 mr-1.5" /> Upload
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  onClick={() => handleDownloadDoc(claim.claimId)}
-                  className="rounded-xl font-semibold hover:bg-opacity-80"
-                  style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-                >
-                  <HiEye className="w-4 h-4 mr-1.5" style={{ color: 'var(--color-text-secondary)' }} /> View
-                </Button>
+              {/* Info (Mobile) */}
+              <p className="text-xs sm:hidden font-medium text-text-secondary">
+                <span className="text-text font-bold">{(currentPage - 1) * perPage + 1}–{Math.min(currentPage * perPage, claims.length)}</span> of <span className="text-text font-bold">{claims.length}</span>
+              </p>
+            </div>
+
+            {/* Info (Desktop) */}
+            <p className="hidden sm:block text-xs font-medium text-text-secondary">
+              Showing <span className="text-text font-bold">{(currentPage - 1) * perPage + 1}–{Math.min(currentPage * perPage, claims.length)}</span> of <span className="text-text font-bold">{claims.length}</span> claims
+            </p>
+
+            {/* Page buttons */}
+            <div className="flex items-center gap-1.5">
+              {/* Prev */}
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                className="w-9 h-9 flex items-center justify-center rounded-xl transition-all disabled:opacity-10 disabled:cursor-not-allowed hover:enabled:bg-primary/10 text-text-secondary"
+              >
+                <HiChevronLeft className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-1 mx-1">
+                {getPageNumbers().map((pg, idx) =>
+                  pg === '…' ? (
+                    <span key={`ellipsis-${idx}`} className="px-1 text-xs font-bold text-text-secondary">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={pg}
+                      onClick={() => setCurrentPage(pg)}
+                      className={`w-9 h-9 flex items-center justify-center rounded-xl text-xs font-black transition-all ${
+                        pg === currentPage
+                          ? 'bg-primary text-white shadow-md'
+                          : 'text-text-secondary hover:bg-primary/10'
+                      }`}
+                    >
+                      {pg}
+                    </button>
+                  )
+                )}
               </div>
-            </Card>
-          ))}
-        </div>
+
+              {/* Next */}
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                className="w-9 h-9 flex items-center justify-center rounded-xl transition-all disabled:opacity-10 disabled:cursor-not-allowed hover:enabled:bg-primary/10 text-text-secondary"
+              >
+                <HiChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
-      {/* Modern New Claim Modal */}
+      {/* ── New Claim Modal ── */}
       <Modal isOpen={showNewClaim} onClose={() => setShowNewClaim(false)} title="File a New Claim">
         <div className="space-y-5 px-1 py-2">
           {userPolicies.length === 0 ? (
@@ -225,10 +345,12 @@ export default function MyClaims() {
               >
                 <option value="">Choose a policy to claim against...</option>
                 {userPolicies.map((p) => (
-                  <option key={p.id} value={p.id}>{p.policyName} (Policy ID: {p.id})</option>
+                  <option key={p.id} value={p.id}>
+                    {p.policyName} (Policy ID: {p.id})
+                  </option>
                 ))}
               </Select>
-              
+
               <Input
                 label="Claim Amount (₹)"
                 type="number"
@@ -236,7 +358,7 @@ export default function MyClaims() {
                 onChange={(e) => setClaimForm((prev) => ({ ...prev, claimAmount: e.target.value }))}
                 placeholder="e.g. 50000"
               />
-              
+
               <Textarea
                 label="Incident Description"
                 value={claimForm.description}
@@ -248,53 +370,80 @@ export default function MyClaims() {
           )}
 
           <div className="flex justify-end gap-3 pt-6 border-t mt-6" style={{ borderColor: 'var(--color-border)' }}>
-            <Button variant="ghost" className="rounded-xl" onClick={() => setShowNewClaim(false)}>Cancel</Button>
-            <Button onClick={handleSubmitClaim} loading={submitting} disabled={userPolicies.length === 0} className="rounded-xl shadow-md">
+            <Button variant="ghost" className="rounded-xl" onClick={() => setShowNewClaim(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitClaim}
+              loading={submitting}
+              disabled={userPolicies.length === 0}
+              className="rounded-xl shadow-md"
+            >
               Submit Claim
             </Button>
           </div>
         </div>
       </Modal>
 
-      {/* Redesigned Upload Document Modal */}
-      <Modal isOpen={!!showUpload} onClose={() => { setShowUpload(null); setFile(null); }} title="Upload Supporting Document">
+      {/* ── Upload Document Modal ── */}
+      <Modal
+        isOpen={!!showUpload}
+        onClose={() => { setShowUpload(null); setFile(null); }}
+        title="Upload Supporting Document"
+      >
         <div className="space-y-5 py-2">
-          <div className="text-sm p-4 rounded-xl flex items-start gap-3" style={{ backgroundColor: 'var(--color-bg)' }}>
+          <div
+            className="text-sm p-4 rounded-xl flex items-start gap-3"
+            style={{ backgroundColor: 'var(--color-bg)' }}
+          >
             <HiOutlineDocumentText className="w-5 h-5 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
             <p style={{ color: 'var(--color-text-secondary)' }}>
-              Please upload clear, legible documents to support <strong style={{ color: 'var(--color-text)' }}>Claim #{showUpload}</strong>. 
+              Please upload clear, legible documents to support{' '}
+              <strong style={{ color: 'var(--color-text)' }}>Claim #{showUpload}</strong>.
               Accepted formats are JPG, JPEG, and PDF.
             </p>
           </div>
 
           <div
             className={`group border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 ${file ? 'bg-opacity-10' : 'hover:bg-opacity-50'}`}
-            style={{ 
+            style={{
               borderColor: file ? 'var(--color-success)' : 'var(--color-border)',
-              backgroundColor: file ? 'var(--color-success)10' : 'transparent' 
+              backgroundColor: file ? 'var(--color-success)10' : 'transparent',
             }}
             onClick={() => document.getElementById('file-upload').click()}
           >
             {file ? (
               <div className="flex flex-col items-center">
-                <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--color-success)', color: 'white' }}>
+                <div
+                  className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
+                  style={{ backgroundColor: 'var(--color-success)', color: 'white' }}
+                >
                   <HiOutlineDocumentText className="w-7 h-7" />
                 </div>
-                <p className="text-base font-bold truncate max-w-xs" style={{ color: 'var(--color-text)' }}>{file.name}</p>
-                <p className="text-xs mt-2 font-medium" style={{ color: 'var(--color-success)' }}>File ready to upload</p>
+                <p className="text-base font-bold truncate max-w-xs" style={{ color: 'var(--color-text)' }}>
+                  {file.name}
+                </p>
+                <p className="text-xs mt-2 font-medium" style={{ color: 'var(--color-success)' }}>
+                  File ready to upload
+                </p>
               </div>
             ) : (
               <div className="flex flex-col items-center">
-                <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform" style={{ backgroundColor: 'var(--color-bg)' }}>
+                <div
+                  className="w-14 h-14 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+                  style={{ backgroundColor: 'var(--color-bg)' }}
+                >
                   <HiOutlineCloudUpload className="w-7 h-7" style={{ color: 'var(--color-primary)' }} />
                 </div>
                 <p className="text-sm font-bold mb-1" style={{ color: 'var(--color-text)' }}>
                   Click to browse files
                 </p>
-                <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>Maximum file size: 5MB</p>
+                <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                  Maximum file size: 5MB
+                </p>
               </div>
             )}
-            
+
             <input
               id="file-upload"
               type="file"
@@ -305,7 +454,9 @@ export default function MyClaims() {
           </div>
 
           <div className="flex justify-end gap-3 pt-6 border-t mt-4" style={{ borderColor: 'var(--color-border)' }}>
-            <Button variant="ghost" className="rounded-xl" onClick={() => { setShowUpload(null); setFile(null); }}>Cancel</Button>
+            <Button variant="ghost" className="rounded-xl" onClick={() => { setShowUpload(null); setFile(null); }}>
+              Cancel
+            </Button>
             <Button onClick={handleUploadDoc} loading={submitting} disabled={!file} className="rounded-xl shadow-md">
               Confirm Upload
             </Button>

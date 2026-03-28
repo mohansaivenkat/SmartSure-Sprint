@@ -23,13 +23,13 @@ import com.group2.claims_service.dto.ClaimRequestDTO;
 import com.group2.claims_service.dto.ClaimResponseDTO;
 import com.group2.claims_service.dto.ClaimStatsDTO;
 import com.group2.claims_service.dto.ClaimStatusUpdateDTO;
-import com.group2.claims_service.service.ClaimService;
+import com.group2.claims_service.service.IClaimService;
 
 @ExtendWith(MockitoExtension.class)
 public class ClaimControllerTest {
 
     @Mock
-    private ClaimService claimService;
+    private IClaimService claimService;
 
     @InjectMocks
     private ClaimController claimController;

@@ -1,5 +1,7 @@
 package com.group2.policy_service.service;
 
+import com.group2.policy_service.service.impl.PolicyCommandServiceImpl;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,10 +53,13 @@ public class PolicyCommandServiceTest {
     private PolicyMapper mapper;
 
     @Mock
+    private com.group2.policy_service.feign.AuthClient authClient;
+
+    @Mock
     private RabbitTemplate rabbitTemplate;
 
     @InjectMocks
-    private PolicyCommandService policyCommandService;
+    private PolicyCommandServiceImpl policyCommandService;
 
     private Policy mockPolicy;
     private UserPolicy mockUserPolicy;

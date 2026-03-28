@@ -1,5 +1,7 @@
 package com.group2.auth_service.service;
 
+import com.group2.auth_service.service.impl.AuthServiceImpl;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -20,12 +22,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.group2.auth_service.dto.AuthResponse;
 import com.group2.auth_service.dto.LoginRequest;
 import com.group2.auth_service.dto.RegisterRequest;
+import com.group2.auth_service.dto.UserResponseDTO;
 import com.group2.auth_service.entity.Role;
 import com.group2.auth_service.entity.User;
 import com.group2.auth_service.exception.UserAlreadyExistsException;
 import com.group2.auth_service.feign.NotificationClient;
 import com.group2.auth_service.repository.AuthServiceRepository;
 import com.group2.auth_service.security.JwtUtil;
+import com.group2.auth_service.util.AuthMapper;
 
 @ExtendWith(MockitoExtension.class)
 public class AuthServiceTest {
@@ -42,10 +46,14 @@ public class AuthServiceTest {
     @Mock
     private NotificationClient notificationClient;
 
+    @Mock
+    private AuthMapper authMapper;
+
     @InjectMocks
-    private AuthService authService;
+    private AuthServiceImpl authService;
 
     private User sampleUser;
+    private UserResponseDTO sampleUserResponse;
     private RegisterRequest registerRequest;
     private LoginRequest loginRequest;
 
@@ -57,6 +65,12 @@ public class AuthServiceTest {
         sampleUser.setEmail("test@test.com");
         sampleUser.setPassword("encodedPassword");
         sampleUser.setRole(Role.CUSTOMER);
+
+        sampleUserResponse = new UserResponseDTO();
+        sampleUserResponse.setId(1L);
+        sampleUserResponse.setName("Test User");
+        sampleUserResponse.setEmail("test@test.com");
+        sampleUserResponse.setRole(Role.CUSTOMER);
 
         registerRequest = new RegisterRequest();
         registerRequest.setName("Test User");
@@ -97,9 +111,11 @@ public class AuthServiceTest {
         when(notificationClient.isOtpVerified(registerRequest.getEmail())).thenReturn(ResponseEntity.ok(true));
         when(notificationClient.markOtpAsUsed(registerRequest.getEmail())).thenReturn(ResponseEntity.ok().build());
         when(passwordEncoder.encode(registerRequest.getPassword())).thenReturn("encodedPassword");
+        when(authMapper.mapToUser(any(RegisterRequest.class))).thenReturn(sampleUser);
         when(userRepository.save(any(User.class))).thenReturn(sampleUser);
+        when(authMapper.mapToResponse(any(User.class))).thenReturn(sampleUserResponse);
 
-        User savedUser = authService.register(registerRequest);
+        UserResponseDTO savedUser = authService.register(registerRequest);
 
         assertNotNull(savedUser);
         assertEquals(sampleUser.getEmail(), savedUser.getEmail());

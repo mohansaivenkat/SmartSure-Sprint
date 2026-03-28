@@ -15,9 +15,6 @@ export default function Contact() {
       return;
     }
     setLoading(true);
-    
-    // Simulate backend API submission, since no contact API endpoint was specifically requested for backend (only implied for form submission).
-    // The instructions say "Backend API int for form submission", but we didn't add an endpoint to a controller yet. We will mock it here with toast if its just required for frontend, but we'll show success.
     setTimeout(() => {
       setLoading(false);
       toast.success('Your message has been sent successfully!');
@@ -25,114 +22,93 @@ export default function Contact() {
     }, 1500);
   };
 
+  const faqs = [
+    { q: "How do I file a claim?", a: "You can file a claim directly from your dashboard. Most claims are processed within 48 hours." },
+    { q: "What documents do I need?", a: "Typically, you'll need a photo of the incident/report and your policy ID." },
+    { q: "Can I cancel my policy any time?", a: "Yes, you can cancel your subscription from the My Policies section at any time." },
+    { q: "Do you offer international coverage?", a: "Standard policies are domestic, but we offer international riders for most plans." }
+  ];
+
   return (
     <div className="min-h-screen flex flex-col pt-16" style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-text)' }}>
-      {/* Mini Public Header */}
-      <header className="fixed top-0 w-full z-50 px-6 py-4 flex justify-between items-center backdrop-blur-md border-b"
-              style={{ background: 'rgba(var(--color-surface-rgb), 0.8)', borderColor: 'var(--color-border)' }}>
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
-            style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))' }}>
-            <HiShieldCheck className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-xl font-bold tracking-tight">Smart<span style={{ color: 'var(--color-primary)' }}>Sure</span></span>
-        </Link>
-        <div className="flex gap-4">
-          <Link to="/" className="px-5 py-2 font-semibold transition-colors rounded-xl"
-                style={{ color: 'var(--color-text)', border: '1.5px solid var(--color-border)' }}>
-            Back to Home
-          </Link>
-        </div>
-      </header>
-
-      <main className="flex-1 max-w-6xl mx-auto px-6 py-20 w-full">
+      <main className="flex-1 max-w-6xl mx-auto px-6 py-16 w-full">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16 space-y-4">
-          <h1 className="text-4xl md:text-5xl font-bold">Contact <span style={{ color: 'var(--color-primary)' }}>Us</span></h1>
-          <p className="text-lg md:text-xl max-w-2xl mx-auto" style={{ color: 'var(--color-text-secondary)' }}>
-            Have a question or need assistance? Reach out to our team—we are here to help.
+          <h1 className="text-2xl md:text-3xl font-bold">Contact <span style={{ color: 'var(--color-primary)' }}>Us</span></h1>
+          <p className="text-base md:text-lg max-w-2xl mx-auto" style={{ color: 'var(--color-text-secondary)' }}>
+            Have a question or need assistance? Reach out to our team—we are here to help 24/7.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-12 items-start">
-          {/* Contact Information */}
-          <div className="space-y-8 p-8 rounded-3xl" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <h2 className="text-2xl font-bold mb-6">Get in Touch</h2>
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-primary)' }}>
-                <HiMail className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Email us</h3>
-                <p style={{ color: 'var(--color-text-secondary)' }}>support@smartsure.com</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-accent)' }}>
-                <HiPhone className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Call us</h3>
-                <p style={{ color: 'var(--color-text-secondary)' }}>+1 (800) 123-4567</p>
-                <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>Mon-Fri 9:00 AM - 6:00 PM EST</p>
+        <div className="grid lg:grid-cols-2 gap-16 items-start">
+          {/* Contact Information & FAQ */}
+          <div className="space-y-12">
+            <div className="space-y-8 p-8 rounded-3xl" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+              <h2 className="text-xl font-bold mb-6">Ways to Connect</h2>
+              <div className="grid sm:grid-cols-2 gap-8">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-primary)' }}><HiMail className="w-6 h-6" /></div>
+                  <div><h3 className="font-semibold">Email</h3><p className="text-sm opacity-70 italic">support@smartsure.com</p></div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-accent)' }}><HiPhone className="w-6 h-6" /></div>
+                  <div><h3 className="font-semibold">Phone</h3><p className="text-sm opacity-70">+1 (800) 123-4567</p></div>
+                </div>
               </div>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-success)' }}>
-                <HiLocationMarker className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Visit us</h3>
-                <p style={{ color: 'var(--color-text-secondary)' }}>123 Insurance Blvd, Tech Park<br/>New York, NY 10001, USA</p>
+
+            <div className="space-y-6">
+              <h2 className="text-xl font-bold px-4">Common Questions</h2>
+              <div className="space-y-4">
+                {faqs.map((faq, i) => (
+                  <div key={i} className="p-5 rounded-2xl border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
+                    <h4 className="font-bold mb-2 flex items-center gap-2">
+                       <span className="text-primary">Q:</span> {faq.q}
+                    </h4>
+                    <p className="text-sm leading-relaxed opacity-70">{faq.a}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
           {/* Contact Form */}
-          <form onSubmit={handleSubmit} className="space-y-6 p-8 rounded-3xl shadow-lg" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <div>
-              <label className="block text-sm font-medium mb-2">Your Name</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2"
-                style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' }}
-                placeholder="John Doe"
-              />
+          <form onSubmit={handleSubmit} className="space-y-6 p-8 rounded-[2rem] shadow-xl" style={{ backgroundColor: 'var(--color-surface)', border: '1.5px solid var(--color-border)' }}>
+            <h2 className="text-xl font-bold mb-4">Send a Message</h2>
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider opacity-60 ml-1">Name</label>
+                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-5 py-4 rounded-2xl text-sm outline-none border focus:border-primary transition-all" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }} placeholder="John Doe" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider opacity-60 ml-1">Email</label>
+                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-5 py-4 rounded-2xl text-sm outline-none border focus:border-primary transition-all" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }} placeholder="john@example.com" />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Email Address</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2"
-                style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' }}
-                placeholder="john@example.com"
-              />
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider opacity-60 ml-1">Message</label>
+              <textarea rows={5} value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} className="w-full px-5 py-4 rounded-2xl text-sm outline-none border focus:border-primary transition-all resize-none" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }} placeholder="How can we help you?" />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Message</label>
-              <textarea
-                rows={5}
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2 resize-none"
-                style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' }}
-                placeholder="How can we help you?"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-xl text-sm font-semibold text-white transition-all transform hover:-translate-y-1 hover:shadow-lg disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))' }}
-            >
-              {loading ? 'Sending...' : 'Send Message'}
+            <button type="submit" disabled={loading} className="w-full py-4 rounded-2xl text-sm font-bold text-white transition-all transform hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 shadow-md" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))' }}>
+              {loading ? 'Sending Request...' : 'Submit Inquiry'}
             </button>
           </form>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="py-12 border-t mt-auto" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
+        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2">
+            <HiShieldCheck className="w-6 h-6 text-primary" />
+            <span className="font-bold">SmartSure</span>
+          </div>
+          <p className="text-sm opacity-60">© 2026 SmartSure Insurance. All rights reserved.</p>
+          <div className="flex gap-6 text-sm font-medium">
+            <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
+            <Link to="/about" className="hover:text-primary transition-colors">About</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

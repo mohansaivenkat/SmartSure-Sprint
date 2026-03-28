@@ -1,5 +1,7 @@
 package com.group2.admin_service.service;
 
+import com.group2.admin_service.service.impl.AdminServiceImpl;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -31,6 +33,8 @@ import com.group2.admin_service.dto.ReportResponse;
 import com.group2.admin_service.dto.ReviewRequest;
 import com.group2.admin_service.feign.ClaimsFeignClient;
 import com.group2.admin_service.feign.PolicyFeignClient;
+import com.group2.admin_service.feign.AuthFeignClient;
+import com.group2.admin_service.util.AdminMapper;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,14 +47,19 @@ public class AdminServiceTest {
     private PolicyFeignClient policyFeignClient;
 
     @Mock
+    private AuthFeignClient authFeignClient;
+
+    @Mock
+    private AdminMapper adminMapper;
+
+    @Mock
     private RabbitTemplate rabbitTemplate;
 
     @InjectMocks
-    private AdminService adminService;
+    private AdminServiceImpl adminService;
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(adminService, "rabbitTemplate", rabbitTemplate);
     }
 
     /**
@@ -208,6 +217,15 @@ public class AdminServiceTest {
 
         when(claimsFeignClient.getClaimStats()).thenReturn(claimStats);
         when(policyFeignClient.getPolicyStats()).thenReturn(policyStats);
+        
+        ReportResponse expectedReport = new ReportResponse();
+        expectedReport.setTotalClaims(10);
+        expectedReport.setApprovedClaims(5);
+        expectedReport.setRejectedClaims(5);
+        expectedReport.setTotalPolicies(20);
+        expectedReport.setTotalRevenue(50000.0);
+        
+        when(adminMapper.mapToReportResponse(any(), any())).thenReturn(expectedReport);
 
         ReportResponse report = adminService.getReports();
 

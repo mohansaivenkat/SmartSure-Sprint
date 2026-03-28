@@ -13,15 +13,15 @@ import com.group2.policy_service.dto.PolicyResponseDTO;
 import com.group2.policy_service.dto.PolicyStatsDTO;
 import com.group2.policy_service.dto.UserPolicyResponseDTO;
 import com.group2.policy_service.entity.PolicyType;
-import com.group2.policy_service.service.PolicyQueryService;
+import com.group2.policy_service.service.IPolicyQueryService;
 
 @RestController
 @RequestMapping("/api")
 public class PolicyQueryController {
 
-    private final PolicyQueryService queryService;
+    private final IPolicyQueryService queryService;
 
-    public PolicyQueryController(PolicyQueryService queryService) {
+    public PolicyQueryController(IPolicyQueryService queryService) {
         this.queryService = queryService;
     }
 

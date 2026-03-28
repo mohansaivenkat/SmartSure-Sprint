@@ -1,4 +1,6 @@
-package com.group2.admin_service.service;
+package com.group2.admin_service.service.impl;
+
+import com.group2.admin_service.service.IAdminService;
 
 import java.util.Collections;
 import java.util.List;
@@ -23,22 +25,28 @@ import com.group2.admin_service.feign.AuthFeignClient;
 import com.group2.admin_service.feign.ClaimsFeignClient;
 import com.group2.admin_service.feign.PolicyFeignClient;
 import com.group2.admin_service.dto.UserDTO;
+import com.group2.admin_service.util.AdminMapper;
 
 @Service
-public class AdminService {
+public class AdminServiceImpl implements IAdminService {
 
     private final ClaimsFeignClient claimsFeignClient;
     private final PolicyFeignClient policyFeignClient;
     private final AuthFeignClient authFeignClient;
+    private final RabbitTemplate rabbitTemplate;
+    private final AdminMapper adminMapper;
     
-    public AdminService(ClaimsFeignClient claimsFeignClient, PolicyFeignClient policyFeignClient, AuthFeignClient authFeignClient) {
+    public AdminServiceImpl(ClaimsFeignClient claimsFeignClient, 
+                            PolicyFeignClient policyFeignClient, 
+                            AuthFeignClient authFeignClient,
+                            RabbitTemplate rabbitTemplate,
+                            AdminMapper adminMapper) {
 		this.claimsFeignClient = claimsFeignClient;
 		this.policyFeignClient = policyFeignClient;
 		this.authFeignClient = authFeignClient;
+        this.rabbitTemplate = rabbitTemplate;
+        this.adminMapper = adminMapper;
 	}
-    
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
     
     // ==================== CLAIM OPERATIONS ====================
 
@@ -48,20 +56,16 @@ public class AdminService {
 	    backoff = @Backoff(delay = 2000)
 	)
 	public void reviewClaim(Long claimId, ReviewRequest request) {
-	
-	    // 1. Create Event DTO (DO NOT send ReviewRequest directly)
 	    ClaimReviewEvent event = new ClaimReviewEvent();
 	    event.setClaimId(claimId);
 	    event.setStatus(request.getStatus());
 	
-	    // 2. Send message to RabbitMQ
 	    rabbitTemplate.convertAndSend(
 	            "claim.exchange",
 	            "claim.review",
 	            event
 	    );
 	
-	    // 3. Logging (very useful for debugging)
 	    System.out.println("🔥 Claim review event sent for claimId: " + claimId);
 	}
 
@@ -70,7 +74,6 @@ public class AdminService {
         throw new RuntimeException("Fallback: Could not review claim. Service might be down. Reason: " + e.getMessage());
     }
 
-    // Get claim status
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public ClaimDTO getClaimStatus(Long claimId) {
         return claimsFeignClient.getClaimStatus(claimId);
@@ -81,7 +84,6 @@ public class AdminService {
         return new ClaimDTO();
     }
 
-    // Get claims by user ID
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public List<ClaimDTO> getClaimsByUserId(Long userId) {
         return claimsFeignClient.getClaimsByUserId(userId);
@@ -92,7 +94,6 @@ public class AdminService {
         return Collections.emptyList();
     }
 
-    // Download Claim Document
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public org.springframework.http.ResponseEntity<byte[]> downloadClaimDocument(Long claimId) {
         return claimsFeignClient.downloadDocument(claimId);
@@ -103,7 +104,6 @@ public class AdminService {
         throw new RuntimeException("Fallback: Could not download document. Service might be down. Reason: " + e.getMessage());
     }
 
-    // Get all claims across all users
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public List<ClaimDTO> getAllClaims() {
         return claimsFeignClient.getAllClaims();
@@ -114,7 +114,6 @@ public class AdminService {
         return Collections.emptyList();
     }
 
-    // Get all users
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public List<UserDTO> getAllUsers() {
         return authFeignClient.getAllUsers();
@@ -124,9 +123,7 @@ public class AdminService {
     public List<UserDTO> recoverGetAllUsers(Exception e) {
         return Collections.emptyList();
     }
-    // ==================== POLICY PRODUCT MANAGEMENT ====================
 
-    // Create policy product
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public PolicyDTO createPolicy(PolicyRequestDTO dto) {
         return policyFeignClient.createPolicy(dto);
@@ -137,7 +134,6 @@ public class AdminService {
         throw new RuntimeException("Fallback: Could not create policy. Service might be down. Reason: " + e.getMessage());
     }
 
-    // Update policy product
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public PolicyDTO updatePolicy(Long id, PolicyRequestDTO dto) {
         return policyFeignClient.updatePolicy(id, dto);
@@ -148,7 +144,6 @@ public class AdminService {
         throw new RuntimeException("Fallback: Could not update policy. Service might be down. Reason: " + e.getMessage());
     }
 
-    // Delete policy product
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public void deletePolicy(Long id) {
         policyFeignClient.deletePolicy(id);
@@ -159,27 +154,11 @@ public class AdminService {
         throw new RuntimeException("Fallback: Could not delete policy. Service might be down. Reason: " + e.getMessage());
     }
 
-    // ==================== REPORTS ====================
-
-    //Reports (DYNAMIC FROM CLAIMS + POLICY SERVICES)
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public ReportResponse getReports() {
-
-        ReportResponse report = new ReportResponse();
-
-        //Fetch data from Claims Service
         ClaimStatusDTO claimStats = claimsFeignClient.getClaimStats();
-
-        report.setTotalClaims((int) claimStats.getTotalClaims());
-        report.setApprovedClaims((int) claimStats.getApprovedClaims());
-        report.setRejectedClaims((int) claimStats.getRejectedClaims());
-
-        // Policy Service stats
-         PolicyStatsDTO policyStats = policyFeignClient.getPolicyStats();
-         report.setTotalPolicies((int) policyStats.getTotalPolicies());
-         report.setTotalRevenue(policyStats.getTotalRevenue());
-
-        return report;
+        PolicyStatsDTO policyStats = policyFeignClient.getPolicyStats();
+        return adminMapper.mapToReportResponse(claimStats, policyStats);
     }
 
     @Recover

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.group2.notification_service.dto.EmailRequest;
-import com.group2.notification_service.service.NotificationService;
+import com.group2.notification_service.service.INotificationService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,9 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class NotificationController {
 
-    private final NotificationService notificationService;
+    private final INotificationService notificationService;
 
-    public NotificationController(NotificationService notificationService) {
+    public NotificationController(INotificationService notificationService) {
         this.notificationService = notificationService;
     }
 

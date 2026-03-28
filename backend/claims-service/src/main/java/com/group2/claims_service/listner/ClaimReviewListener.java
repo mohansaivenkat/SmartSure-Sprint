@@ -4,7 +4,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import com.group2.claims_service.dto.ClaimReviewEvent;
-import com.group2.claims_service.service.ClaimService;
+import com.group2.claims_service.service.IClaimService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,9 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ClaimReviewListener {
 
-    private final ClaimService claimService;
+    private final IClaimService claimService;
 
-    public ClaimReviewListener(ClaimService claimService) {
+    public ClaimReviewListener(IClaimService claimService) {
         this.claimService = claimService;
     }
 

@@ -50,7 +50,7 @@ export default function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
       <PageHeader
-        title={`Welcome back, ${user.name.split(' ')[0]}`}
+        title={`Welcome back, ${(user?.name || 'User').split(' ')[0]}`}
         subtitle="Here's a synchronized overview of your insurance portfolio"
       />
 
@@ -105,13 +105,13 @@ export default function Dashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b" style={{ borderColor: 'var(--color-border)' }}>
-                      <th className="pb-4 text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>Plan Details</th>
-                      <th className="pb-4 text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>Premium</th>
-                      <th className="pb-4 text-xs font-bold uppercase tracking-wider text-right" style={{ color: 'var(--color-text-secondary)' }}>Status</th>
+                    <tr className="border-b-0">
+                      <th className="pb-4 text-xs font-bold uppercase tracking-wider text-text-secondary opacity-60">Plan Details</th>
+                      <th className="pb-4 text-xs font-bold uppercase tracking-wider text-text-secondary opacity-60">Premium</th>
+                      <th className="pb-4 text-xs font-bold uppercase tracking-wider text-right text-text-secondary opacity-60">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
+                  <tbody className="divide-y-0">
                     {activePolicies.slice(0, 5).map((p) => (
                       <tr key={p.id} className="group hover:bg-[var(--color-bg)] transition-colors">
                         <td className="py-4">
@@ -144,10 +144,10 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-4">
                 {claims.slice(0, 3).map((c) => (
-                  <div key={c.claimId} className="flex items-center justify-between p-4 rounded-2xl border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg)' }}>
+                  <div key={c.claimId} className="flex items-center justify-between p-4 rounded-2xl shadow-sm bg-bg">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                        <HiClipboardList className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-surface">
+                        <HiClipboardList className="w-5 h-5 text-primary" />
                       </div>
                       <div>
                         <p className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>Claim #{c.claimId}</p>
@@ -184,9 +184,9 @@ export default function Dashboard() {
 // Side-Nav Helper Component
 function QuickActionLink({ to, icon: Icon, label }) {
   return (
-    <Link to={to} className="flex items-center gap-3 p-4 rounded-xl transition-all hover:translate-x-1 border border-transparent hover:shadow-sm" style={{ backgroundColor: 'var(--color-bg)' }}>
-      <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-        <Icon className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+    <Link to={to} className="flex items-center gap-3 p-4 rounded-xl transition-all hover:translate-x-1 hover:shadow-sm bg-bg">
+      <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-surface">
+        <Icon className="w-4 h-4 text-primary" />
       </div>
       <span className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>{label}</span>
       <HiArrowRight className="ml-auto w-4 h-4 opacity-30" />

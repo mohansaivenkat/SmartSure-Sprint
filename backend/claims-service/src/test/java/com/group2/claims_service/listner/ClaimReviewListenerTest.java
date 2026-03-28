@@ -14,13 +14,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.group2.claims_service.dto.ClaimReviewEvent;
-import com.group2.claims_service.service.ClaimService;
+import com.group2.claims_service.service.IClaimService;
 
 @ExtendWith(MockitoExtension.class)
 public class ClaimReviewListenerTest {
 
     @Mock
-    private ClaimService claimService;
+    private IClaimService claimService;
 
     @InjectMocks
     private ClaimReviewListener claimReviewListener;

@@ -17,13 +17,13 @@ import com.group2.policy_service.dto.PolicyResponseDTO;
 import com.group2.policy_service.dto.PolicyStatsDTO;
 import com.group2.policy_service.dto.UserPolicyResponseDTO;
 import com.group2.policy_service.entity.PolicyType;
-import com.group2.policy_service.service.PolicyQueryService;
+import com.group2.policy_service.service.IPolicyQueryService;
 
 @ExtendWith(MockitoExtension.class)
 public class PolicyQueryControllerTest {
 
     @Mock
-    private PolicyQueryService policyQueryService;
+    private IPolicyQueryService policyQueryService;
 
     @InjectMocks
     private PolicyQueryController policyQueryController;

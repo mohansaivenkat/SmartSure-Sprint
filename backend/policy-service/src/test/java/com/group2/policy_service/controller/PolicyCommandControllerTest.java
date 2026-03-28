@@ -18,13 +18,13 @@ import org.springframework.http.ResponseEntity;
 import com.group2.policy_service.dto.PolicyRequestDTO;
 import com.group2.policy_service.dto.PolicyResponseDTO;
 import com.group2.policy_service.dto.UserPolicyResponseDTO;
-import com.group2.policy_service.service.PolicyCommandService;
+import com.group2.policy_service.service.IPolicyCommandService;
 
 @ExtendWith(MockitoExtension.class)
 public class PolicyCommandControllerTest {
 
     @Mock
-    private PolicyCommandService policyCommandService;
+    private IPolicyCommandService policyCommandService;
 
     @InjectMocks
     private PolicyCommandController policyCommandController;

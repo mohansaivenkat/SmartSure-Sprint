@@ -29,7 +29,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-bg)' }}>
-      {user && <Navbar />}
+      <Navbar />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={user ? <Navigate to={user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard'} /> : <Home />} />

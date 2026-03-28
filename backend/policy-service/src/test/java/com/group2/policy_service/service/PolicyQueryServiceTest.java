@@ -1,5 +1,7 @@
 package com.group2.policy_service.service;
 
+import com.group2.policy_service.service.impl.PolicyQueryServiceImpl;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,7 +46,7 @@ public class PolicyQueryServiceTest {
     private PolicyMapper mapper;
 
     @InjectMocks
-    private PolicyQueryService policyQueryService;
+    private PolicyQueryServiceImpl policyQueryService;
 
     private Policy mockPolicy;
     private UserPolicy mockUserPolicy;

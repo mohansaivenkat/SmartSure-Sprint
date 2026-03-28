@@ -1,11 +1,12 @@
-package com.group2.policy_service.service;
+package com.group2.policy_service.service.impl;
+
+import com.group2.policy_service.service.IPolicyCommandService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,31 +24,32 @@ import com.group2.policy_service.repository.PolicyRepository;
 import com.group2.policy_service.repository.PolicyTypeRepository;
 import com.group2.policy_service.repository.UserPolicyRepository;
 import com.group2.policy_service.util.PolicyMapper;
+import com.group2.policy_service.feign.AuthClient;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class PolicyCommandService {
+public class PolicyCommandServiceImpl implements IPolicyCommandService {
 
     private final PolicyRepository policyRepository;
     private final UserPolicyRepository userPolicyRepository;
     private final PolicyTypeRepository policyTypeRepository;
     private final PolicyMapper mapper;
-    private final com.group2.policy_service.feign.AuthClient authClient;
+    private final AuthClient authClient;
+    private final RabbitTemplate rabbitTemplate;
 
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
-
-    public PolicyCommandService(PolicyRepository policyRepository,
+    public PolicyCommandServiceImpl(PolicyRepository policyRepository,
                                UserPolicyRepository userPolicyRepository,
                                PolicyTypeRepository policyTypeRepository,
                                PolicyMapper mapper,
-                               com.group2.policy_service.feign.AuthClient authClient) {
+                               AuthClient authClient,
+                               RabbitTemplate rabbitTemplate) {
         this.policyRepository = policyRepository;
         this.userPolicyRepository = userPolicyRepository;
         this.policyTypeRepository = policyTypeRepository;
         this.mapper = mapper;
         this.authClient = authClient;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @Transactional
@@ -95,7 +97,7 @@ public class PolicyCommandService {
 
         // Saga Trigger
         PolicyCancellationEvent event = new PolicyCancellationEvent(
-                userPolicy.getId(), // Fix: use the UserPolicy subscription ID, not the template ID
+                userPolicy.getId(),
                 userPolicy.getUserId(),
                 LocalDateTime.now()
         );

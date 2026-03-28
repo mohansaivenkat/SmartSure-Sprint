@@ -13,17 +13,16 @@ import com.group2.admin_service.dto.PolicyRequestDTO;
 import com.group2.admin_service.dto.ReportResponse;
 import com.group2.admin_service.dto.ReviewRequest;
 import com.group2.admin_service.dto.UserDTO;
-import com.group2.admin_service.service.AdminService;
+import com.group2.admin_service.service.IAdminService;
 
 @PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
 
-    private AdminService adminService;
+    private final IAdminService adminService;
     
-    public AdminController(AdminService adminService) {
-		super();
+    public AdminController(IAdminService adminService) {
 		this.adminService = adminService;
 	}
 

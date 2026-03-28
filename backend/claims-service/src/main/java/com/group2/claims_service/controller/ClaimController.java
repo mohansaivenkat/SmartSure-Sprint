@@ -18,15 +18,15 @@ import com.group2.claims_service.dto.ClaimRequestDTO;
 import com.group2.claims_service.dto.ClaimResponseDTO;
 import com.group2.claims_service.dto.ClaimStatsDTO;
 import com.group2.claims_service.dto.ClaimStatusUpdateDTO;
-import com.group2.claims_service.service.ClaimService;
+import com.group2.claims_service.service.IClaimService;
 
 @RestController
 @RequestMapping("/api/claims")
 public class ClaimController {
 	
-	private final ClaimService claimService;
+	private final IClaimService claimService;
 
-	public ClaimController(ClaimService claimService) {
+	public ClaimController(IClaimService claimService) {
 		this.claimService = claimService;
 	}
 	

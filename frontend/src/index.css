@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: var(--color-primary);
+  --color-primary-light: var(--color-primary-light);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-accent: var(--color-accent);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-text: var(--color-text);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-border: var(--color-border);
+}
+
 /* ===== CSS Variables for Theming ===== */
 :root {
   --color-primary: #6366f1;
@@ -14,7 +29,7 @@
   --color-surface-hover: #f1f5f9;
   --color-text: #0f172a;
   --color-text-secondary: #64748b;
-  --color-border: #e2e8f0;
+  --color-border: rgba(0, 0, 0, 0.05);
   --color-shadow: rgba(0, 0, 0, 0.08);
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
@@ -32,7 +47,7 @@
   --color-surface-hover: #334155;
   --color-text: #f1f5f9;
   --color-text-secondary: #94a3b8;
-  --color-border: #334155;
+  --color-border: rgba(255, 255, 255, 0.05);
   --color-shadow: rgba(0, 0, 0, 0.3);
 }
 

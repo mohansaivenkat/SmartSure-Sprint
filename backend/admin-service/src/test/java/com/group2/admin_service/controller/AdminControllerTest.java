@@ -25,13 +25,13 @@ import com.group2.admin_service.dto.PolicyDTO;
 import com.group2.admin_service.dto.PolicyRequestDTO;
 import com.group2.admin_service.dto.ReportResponse;
 import com.group2.admin_service.dto.ReviewRequest;
-import com.group2.admin_service.service.AdminService;
+import com.group2.admin_service.service.IAdminService;
 
 @ExtendWith(MockitoExtension.class)
 public class AdminControllerTest {
 
     @Mock
-    private AdminService adminService;
+    private IAdminService adminService;
 
     @InjectMocks
     private AdminController adminController;

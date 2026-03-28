@@ -7,15 +7,15 @@ import org.springframework.web.bind.annotation.*;
 import com.group2.policy_service.dto.PolicyRequestDTO;
 import com.group2.policy_service.dto.PolicyResponseDTO;
 import com.group2.policy_service.dto.UserPolicyResponseDTO;
-import com.group2.policy_service.service.PolicyCommandService;
+import com.group2.policy_service.service.IPolicyCommandService;
 
 @RestController
 @RequestMapping("/api")
 public class PolicyCommandController {
 
-    private final PolicyCommandService commandService;
+    private final IPolicyCommandService commandService;
 
-    public PolicyCommandController(PolicyCommandService commandService) {
+    public PolicyCommandController(IPolicyCommandService commandService) {
         this.commandService = commandService;
     }
 

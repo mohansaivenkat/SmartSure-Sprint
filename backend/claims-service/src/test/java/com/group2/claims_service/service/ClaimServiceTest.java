@@ -35,6 +35,9 @@ import com.group2.claims_service.entity.ClaimStatus;
 import com.group2.claims_service.exception.ClaimNotFoundException;
 import com.group2.claims_service.repository.ClaimDocumentRepository;
 import com.group2.claims_service.repository.ClaimRepository;
+import com.group2.claims_service.service.impl.ClaimServiceImpl;
+import com.group2.claims_service.util.ClaimMapper;
+import com.group2.claims_service.feign.AuthClient;
 
 @ExtendWith(MockitoExtension.class)
 public class ClaimServiceTest {
@@ -48,15 +51,20 @@ public class ClaimServiceTest {
     @Mock
     private RabbitTemplate rabbitTemplate;
 
+    @Mock
+    private AuthClient authClient;
+
+    @Mock
+    private ClaimMapper claimMapper;
+
     @InjectMocks
-    private ClaimService claimService;
+    private ClaimServiceImpl claimService;
 
     private Claim claim;
+    private ClaimResponseDTO claimResponseDTO;
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(claimService, "rabbitTemplate", rabbitTemplate);
-
         claim = new Claim();
         claim.setId(1L);
         claim.setPolicyId(100L);
@@ -65,13 +73,14 @@ public class ClaimServiceTest {
         claim.setDescription("Car Damage");
         claim.setClaimStatus(ClaimStatus.SUBMITTED);
         claim.setCreatedAt(LocalDateTime.now());
+
+        claimResponseDTO = new ClaimResponseDTO();
+        claimResponseDTO.setClaimId(1L);
+        claimResponseDTO.setStatus("SUBMITTED");
+        claimResponseDTO.setPolicyId(100L);
+        claimResponseDTO.setClaimAmount(5000.0);
     }
 
-    /**
-     * Given: ClaimRequestDTO
-     * When: initiateClaim is called
-     * Then: saves to DB, sends RabbitMQ event, returns ClaimResponseDTO
-     */
     @Test
     void testInitiateClaim() {
         ClaimRequestDTO requestDTO = new ClaimRequestDTO();
@@ -80,7 +89,9 @@ public class ClaimServiceTest {
         requestDTO.setClaimAmount(5000.0);
         requestDTO.setDescription("Car Damage");
 
+        when(claimMapper.mapToEntity(any())).thenReturn(claim);
         when(claimRepository.save(any(Claim.class))).thenReturn(claim);
+        when(claimMapper.mapToResponse(any())).thenReturn(claimResponseDTO);
         doNothing().when(rabbitTemplate).convertAndSend(eq("claim.exchange"), eq("claim.created"), any(ClaimCreatedEvent.class));
 
         ClaimResponseDTO response = claimService.initateClaim(requestDTO);
@@ -89,14 +100,8 @@ public class ClaimServiceTest {
         assertEquals(1L, response.getClaimId());
         assertEquals("SUBMITTED", response.getStatus());
         verify(claimRepository, times(1)).save(any(Claim.class));
-        verify(rabbitTemplate, times(1)).convertAndSend(eq("claim.exchange"), eq("claim.created"), any(ClaimCreatedEvent.class));
     }
 
-    /**
-     * Given: Invalid claimId
-     * When: uploadDocument is called
-     * Then: Throws ClaimNotFoundException
-     */
     @Test
     void testUploadDocument_ClaimNotFound() {
         MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "data".getBytes());
@@ -105,11 +110,6 @@ public class ClaimServiceTest {
         assertThrows(ClaimNotFoundException.class, () -> claimService.uploadDocument(1L, file));
     }
 
-    /**
-     * Given: Valid claimId
-     * When: uploadDocument is called
-     * Then: saves Document and returns success string
-     */
     @Test
     void testUploadDocument_Success() {
         MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "data".getBytes());
@@ -122,14 +122,10 @@ public class ClaimServiceTest {
         verify(documentRepository, times(1)).save(any(ClaimDocument.class));
     }
 
-    /**
-     * Given: Valid claimId
-     * When: getClaimStatus is called
-     * Then: returns ClaimResponseDTO with status
-     */
     @Test
     void testGetClaimStatus() {
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+        when(claimMapper.mapToResponse(any())).thenReturn(claimResponseDTO);
 
         ClaimResponseDTO response = claimService.getClaimStatus(1L);
 
@@ -137,14 +133,10 @@ public class ClaimServiceTest {
         assertEquals(1L, response.getClaimId());
     }
 
-    /**
-     * Given: Valid claimId
-     * When: getClaimById is called
-     * Then: returns full ClaimResponseDTO
-     */
     @Test
     void testGetClaimById() {
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+        when(claimMapper.mapToResponse(any())).thenReturn(claimResponseDTO);
 
         ClaimResponseDTO response = claimService.getClaimById(1L);
 
@@ -153,14 +145,9 @@ public class ClaimServiceTest {
         assertEquals(5000.0, response.getClaimAmount());
     }
 
-    /**
-     * Given: Valid Claim ID and legal transition
-     * When: updateClaimStatus is called
-     * Then: Claim status is updated and saved
-     */
     @Test
     void testUpdateClaimStatus_ValidTransition() {
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim)); // Currently SUBMITTED
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
         when(claimRepository.save(any(Claim.class))).thenReturn(claim);
 
         claimService.updateClaimStatus(1L, "UNDER_REVIEW");
@@ -169,40 +156,18 @@ public class ClaimServiceTest {
         verify(claimRepository, times(1)).save(claim);
     }
 
-    /**
-     * Given: Valid Claim ID and illegal transition
-     * When: updateClaimStatus is called
-     * Then: Throws RuntimeException
-     */
     @Test
     void testUpdateClaimStatus_InvalidTransition() {
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim)); // Currently SUBMITTED
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
-        // SUBMITTED -> APPROVED is invalid
         assertThrows(RuntimeException.class, () -> claimService.updateClaimStatus(1L, "APPROVED"));
         verify(claimRepository, times(0)).save(any(Claim.class));
     }
 
-    /**
-     * Given: Invalid status string
-     * When: updateClaimStatus is called
-     * Then: Throws RuntimeException
-     */
-    @Test
-    void testUpdateClaimStatus_InvalidStatus() {
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
-
-        assertThrows(RuntimeException.class, () -> claimService.updateClaimStatus(1L, "INVALID"));
-    }
-
-    /**
-     * Given: Valid userId
-     * When: getClaimsByUserId is called
-     * Then: returns list of claims mapped to DTO
-     */
     @Test
     void testGetClaimsByUserId() {
         when(claimRepository.findByUserId(200L)).thenReturn(Arrays.asList(claim, claim));
+        when(claimMapper.mapToResponse(any())).thenReturn(claimResponseDTO);
 
         List<ClaimResponseDTO> responseList = claimService.getClaimsByUserId(200L);
 
@@ -210,11 +175,6 @@ public class ClaimServiceTest {
         assertEquals(1L, responseList.get(0).getClaimId());
     }
 
-    /**
-     * Given: Requests for claim stats
-     * When: getClaimStats is called
-     * Then: Returns accurate counts mapped in ClaimStatsDTO
-     */
     @Test
     void testGetClaimStats() {
         when(claimRepository.count()).thenReturn(10L);

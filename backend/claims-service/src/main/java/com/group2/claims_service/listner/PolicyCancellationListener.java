@@ -3,14 +3,14 @@ package com.group2.claims_service.listner;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import com.group2.claims_service.dto.PolicyCancellationEvent;
-import com.group2.claims_service.service.ClaimService;
+import com.group2.claims_service.service.IClaimService;
 
 @Component
 public class PolicyCancellationListener {
 
-    private final ClaimService claimService;
+    private final IClaimService claimService;
 
-    public PolicyCancellationListener(ClaimService claimService) {
+    public PolicyCancellationListener(IClaimService claimService) {
         this.claimService = claimService;
     }
 

@@ -1,11 +1,12 @@
-package com.group2.auth_service.service;
+package com.group2.auth_service.service.impl;
+
+import com.group2.auth_service.service.IAuthService;
 
 import java.util.Optional;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 
 import com.group2.auth_service.dto.AuthResponse;
@@ -13,44 +14,57 @@ import com.group2.auth_service.dto.LoginRequest;
 import com.group2.auth_service.dto.RegisterRequest;
 import com.group2.auth_service.dto.ResetPasswordRequest;
 import com.group2.auth_service.dto.UserProfileRequest;
+import com.group2.auth_service.dto.UserResponseDTO;
 import com.group2.auth_service.entity.Role;
 import com.group2.auth_service.entity.User;
 import com.group2.auth_service.feign.NotificationClient;
 import com.group2.auth_service.repository.AuthServiceRepository;
 import com.group2.auth_service.security.JwtUtil;
 
+import com.group2.auth_service.util.AuthMapper;
+
 @Service
-public class AuthService {
+public class AuthServiceImpl implements IAuthService {
 
 	private final AuthServiceRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtUtil jwtUtil;
 	private final NotificationClient notificationClient;
+	private final AuthMapper authMapper;
 
-	public AuthService(AuthServiceRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil, NotificationClient notificationClient) {
+	public AuthServiceImpl(AuthServiceRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil, NotificationClient notificationClient, AuthMapper authMapper) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtUtil = jwtUtil;
 		this.notificationClient = notificationClient;
+		this.authMapper = authMapper;
 	}
 	
-	@PostConstruct
-	public void initAdmin() {
-		Optional<User> adminOpt = userRepository.findByEmail("admin@capgemini.com");
-		if (adminOpt.isEmpty()) {
-			User admin = new User();
-			admin.setName("Admin");
-			admin.setEmail("admin@capgemini.com");
-			admin.setPassword(passwordEncoder.encode("admin123"));
-			admin.setRole(Role.ADMIN);
-			admin.setPhone("0000000000"); 
-			admin.setAddress("Admin Address");
-			userRepository.save(admin);
-		}
+	@org.springframework.context.annotation.Bean
+	public org.springframework.boot.CommandLineRunner dataLoader(IAuthService authService) {
+		return args -> {
+			initAdmin();
+		};
 	}
+
+    @Transactional
+    public void initAdmin() {
+        Optional<User> adminOpt = userRepository.findByEmail("admin@capgemini.com");
+        if (adminOpt.isEmpty()) {
+            User admin = new User();
+            admin.setName("Admin");
+            admin.setEmail("admin@capgemini.com");
+            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setRole(Role.ADMIN);
+            admin.setPhone("0000000000"); 
+            admin.setAddress("Admin Address");
+            userRepository.save(admin);
+            System.out.println("Admin user initialized.");
+        }
+    }
 	
     @Transactional
-	public User register(RegisterRequest request) {
+	public UserResponseDTO register(RegisterRequest request) {
         Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
 
         if (existingUser.isPresent()) {
@@ -65,15 +79,11 @@ public class AuthService {
         
         notificationClient.markOtpAsUsed(request.getEmail());
 
-        User user = new User();
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
+        User user = authMapper.mapToUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));    
-        user.setPhone(request.getPhone());
-        user.setAddress(request.getAddress());
         user.setRole(Role.CUSTOMER); 
         
-        return userRepository.save(user);
+        return authMapper.mapToResponse(userRepository.save(user));
 	}
 
 	public AuthResponse login(LoginRequest request) {
@@ -125,27 +135,28 @@ public class AuthService {
     }
 
     @Transactional
-    public User updateProfile(UserProfileRequest request) {
+    public UserResponseDTO updateProfile(UserProfileRequest request) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long userId = (principal instanceof Long) ? (Long) principal : Long.parseLong(principal.toString());
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.setName(request.getName());
-        user.setPhone(request.getPhone());
-        user.setAddress(request.getAddress());
+        authMapper.updateUserFromRequest(request, user);
         
-        return userRepository.save(user);
+        return authMapper.mapToResponse(userRepository.save(user));
     }
 
-	public User getUserById(Long id) {
+	public UserResponseDTO getUserById(Long id) {
 	    return userRepository.findById(id)
+	            .map(authMapper::mapToResponse)
 	            .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
 	}
 
-	public java.util.List<User> getAllUsers() {
-		return userRepository.findAll();
+	public java.util.List<UserResponseDTO> getAllUsers() {
+		return userRepository.findAll().stream()
+                .map(authMapper::mapToResponse)
+                .collect(java.util.stream.Collectors.toList());
 	}
 
 }

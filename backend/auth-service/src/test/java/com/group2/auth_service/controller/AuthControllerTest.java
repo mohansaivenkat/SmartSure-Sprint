@@ -16,27 +16,27 @@ import org.springframework.http.ResponseEntity;
 import com.group2.auth_service.dto.AuthResponse;
 import com.group2.auth_service.dto.LoginRequest;
 import com.group2.auth_service.dto.RegisterRequest;
-import com.group2.auth_service.entity.User;
-import com.group2.auth_service.service.AuthService;
+import com.group2.auth_service.dto.UserResponseDTO;
+import com.group2.auth_service.service.IAuthService;
 
 @ExtendWith(MockitoExtension.class)
 public class AuthControllerTest {
 
     @Mock
-    private AuthService authService;
+    private IAuthService authService;
 
     @InjectMocks
     private AuthController authController;
 
     @Test
     void register() {
-        User user = new User();
+        UserResponseDTO user = new UserResponseDTO();
         RegisterRequest req = new RegisterRequest();
         req.setEmail("test@test.com");
         
         when(authService.register(any())).thenReturn(user);
         
-        ResponseEntity<User> res = authController.register(req);
+        ResponseEntity<UserResponseDTO> res = authController.register(req);
         assertEquals(user, res.getBody());
     }
 
