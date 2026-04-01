@@ -3,6 +3,8 @@ package com.group2.claims_service.dto;
 public class ClaimReviewEvent {
     private Long claimId;
     private String status;
+    private String remark;
+
 	public Long getClaimId() {
 		return claimId;
 	}
@@ -14,6 +16,12 @@ public class ClaimReviewEvent {
 	}
 	public void setStatus(String status) {
 		this.status = status;
+	}
+	public String getRemark() {
+		return remark;
+	}
+	public void setRemark(String remark) {
+		this.remark = remark;
 	}
     
     

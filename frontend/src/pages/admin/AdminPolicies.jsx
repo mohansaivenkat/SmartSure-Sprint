@@ -241,7 +241,7 @@ export default function AdminPolicies() {
   };
 
   const handleSubmit = async () => {
-    if (!form.policyName || !form.premiumAmount || !form.coverageAmount || !form.durationInMonths) {
+    if (!form.policyName || !form.description || !form.premiumAmount || !form.coverageAmount || !form.durationInMonths) {
       toast.error('Please fill in all required fields'); return;
     }
     setSubmitting(true);
@@ -499,10 +499,10 @@ export default function AdminPolicies() {
             placeholder="e.g., Premium Health Plan"
           />
           <Textarea
-            label="Description"
+            label="Description *"
             value={form.description}
             onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-            placeholder="Describe the policy features and terms…"
+            placeholder="Describe the policy features and terms in detail (no word limit)..."
           />
 
           {/* Two-col grid (stacks on mobile via .form-grid) */}

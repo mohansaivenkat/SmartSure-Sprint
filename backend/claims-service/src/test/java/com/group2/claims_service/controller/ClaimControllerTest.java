@@ -109,8 +109,9 @@ public class ClaimControllerTest {
     void testUpdateClaimStatus() {
         ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
         dto.setStatus("APPROVED");
+        dto.setRemark("Test Remark");
 
-        doNothing().when(claimService).updateClaimStatus(1L, "APPROVED");
+        doNothing().when(claimService).updateClaimStatus(1L, "APPROVED", "Test Remark");
 
         ResponseEntity<String> res = claimController.updateClaimStatus(1L, dto);
         assertEquals(200, res.getStatusCode().value());

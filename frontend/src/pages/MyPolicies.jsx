@@ -101,7 +101,7 @@ export default function MyPolicies() {
     try {
       const orderRes = await paymentAPI.createOrder({
         userId: user.id,
-        policyId: policy.id,
+        policyId: policy.policyId,
         amount: policy.outstandingBalance,
       });
       const { orderId } = orderRes.data;
@@ -334,28 +334,52 @@ export default function MyPolicies() {
                         </div>
                       )}
 
-                      {/* Actions */}
-                      <div className="flex gap-2 shrink-0 flex-wrap sm:flex-nowrap w-full sm:w-auto">
-                        {hasBalance && (
-                          <button
-                            onClick={() => handlePayPremium(policy)}
-                            disabled={paying === policy.id}
-                            className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black text-white transition-all bg-amber-500 hover:bg-amber-600 shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap"
-                          >
-                            {paying === policy.id ? (
-                              <span className="animate-pulse">Processing...</span>
-                            ) : (
-                              <>Pay ₹{policy.outstandingBalance?.toLocaleString()}</>
-                            )}
-                          </button>
-                        )}
-                        {policy.status === 'ACTIVE' && (
-                          <button
-                            onClick={() => handleRequestCancellation(policy.id)}
-                            className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all border border-transparent hover:border-red-100 text-red-500 bg-red-50 hover:bg-red-500 hover:text-white whitespace-nowrap"
-                          >
-                            Cancel
-                          </button>
+                        <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
+                        <div className="flex gap-2 w-full sm:w-auto">
+                          {hasBalance && isActionable && (
+                            <button
+                              onClick={() => handlePayPremium(policy)}
+                              disabled={paying === policy.id}
+                              className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black text-white transition-all bg-amber-500 hover:bg-amber-600 shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap"
+                            >
+                              {paying === policy.id ? (
+                                <span className="animate-pulse">Processing...</span>
+                              ) : (
+                                <>Pay ₹{policy.outstandingBalance?.toLocaleString()}</>
+                              )}
+                            </button>
+                          )}
+                          {/* Display action buttons for all policies, but disable them for history/cancelled ones */}
+                          <div className="flex flex-wrap gap-2 md:gap-3">
+                            <Link
+                              to={policy.status === 'ACTIVE' && !hasBalance ? "/claims" : "#"}
+                              onClick={(e) => (policy.status !== 'ACTIVE' || hasBalance) && e.preventDefault()}
+                              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap 
+                                ${policy.status !== 'ACTIVE' || hasBalance 
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60' 
+                                  : 'bg-primary text-white hover:bg-primary-dark shadow-sm'}`}
+                              title={policy.status !== 'ACTIVE' ? "Cannot file claim for inactive policy" : (hasBalance ? "Please clear outstanding balance first" : "File a claim")}
+                            >
+                              File Claim
+                            </Link>
+
+                            <button
+                              onClick={() => policy.status === 'ACTIVE' && !hasBalance && handleRequestCancellation(policy.id)}
+                              disabled={policy.status !== 'ACTIVE' || hasBalance}
+                              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all border whitespace-nowrap 
+                                ${policy.status !== 'ACTIVE' || hasBalance 
+                                  ? 'border-gray-200 text-gray-400 cursor-not-allowed opacity-60' 
+                                  : 'border-red-100 text-red-500 bg-red-50 hover:bg-red-500 hover:text-white'}`}
+                              title={policy.status !== 'ACTIVE' ? "Cannot cancel inactive policy" : (hasBalance ? "Please clear outstanding balance first" : "Cancel policy")}
+                            >
+                              {policy.status === 'PENDING_CANCELLATION' ? 'Pending Cancel' : 'Cancel'}
+                            </button>
+                          </div>
+                        </div>
+                        {hasBalance && isActionable && (
+                          <p className="text-[10px] font-bold text-amber-600 italic text-center sm:text-right">
+                             * First pay the premium to enable cancel or claim
+                          </p>
                         )}
                       </div>
                     </div>

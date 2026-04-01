@@ -13,4 +13,5 @@ public interface IPolicyQueryService {
     List<PolicyType> getAllPolicyTypes();
     PolicyResponseDTO getPolicyById(Long policyId);
     PolicyStatsDTO getPolicyStats();
+    UserPolicyResponseDTO getUserPolicyById(Long id);
 }

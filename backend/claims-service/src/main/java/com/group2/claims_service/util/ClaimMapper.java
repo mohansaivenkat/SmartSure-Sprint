@@ -29,6 +29,8 @@ public class ClaimMapper {
         dto.setClaimAmount(claim.getClaimAmount());
         dto.setDescription(claim.getDescription());
         dto.setStatus(claim.getClaimStatus() != null ? claim.getClaimStatus().name() : null);
+        dto.setCreatedAt(claim.getCreatedAt());
         return dto;
     }
+
 }

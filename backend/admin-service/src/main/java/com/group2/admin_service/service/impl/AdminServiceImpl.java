@@ -59,6 +59,7 @@ public class AdminServiceImpl implements IAdminService {
 	    ClaimReviewEvent event = new ClaimReviewEvent();
 	    event.setClaimId(claimId);
 	    event.setStatus(request.getStatus());
+	    event.setRemark(request.getRemark());
 	
 	    rabbitTemplate.convertAndSend(
 	            "claim.exchange",

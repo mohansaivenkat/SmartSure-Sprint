@@ -29,8 +29,10 @@ export default function MyClaims() {
   const [showNewClaim, setShowNewClaim] = useState(false);
   const [showUpload, setShowUpload] = useState(null);
   const [claimForm, setClaimForm] = useState({ policyId: '', claimAmount: '', description: '' });
+  const [claimToRefile, setClaimToRefile] = useState(null);
   const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -47,7 +49,7 @@ export default function MyClaims() {
         policyAPI.getUserPolicies(user.id),
       ]);
       setClaims(claimsRes.data);
-      setUserPolicies(policiesRes.data.filter((p) => p.status === 'ACTIVE'));
+      setUserPolicies(policiesRes.data.filter((p) => p.status === 'ACTIVE' && (p.outstandingBalance || 0) <= 0));
     } catch (err) {
       console.error('MyClaims fetch error:', err);
       setError(err.response?.data?.message || err.response?.data || 'Failed to load claims');
@@ -119,10 +121,35 @@ export default function MyClaims() {
       toast.success('Document uploaded successfully!');
       setShowUpload(null);
       setFile(null);
+      await fetchData();
     } catch (err) {
       toast.error(err.response?.data?.message || err.response?.data || 'Failed to upload document');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleStartRefile = (claim) => {
+    if (!claim) return;
+
+    setClaimToRefile(claim.claimId);
+    setShowNewClaim(true);
+    setClaimForm({
+      policyId: String(claim.policyId),
+      claimAmount: '',
+      description: `Previous admin remark: ${claim.adminRemark || 'Not provided'}.\nPlease explain your updated evidence or issue clearly and upload supporting docs.`,
+    });
+  };
+
+  const handleRefreshClaims = async () => {
+    setRefreshing(true);
+    try {
+      await fetchData();
+      toast.success('Claims refreshed successfully');
+    } catch {
+      toast.error('Unable to refresh claims');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -205,6 +232,14 @@ export default function MyClaims() {
                     <p className="text-sm mt-1.5 font-medium truncate text-text-secondary">
                       {claim.description}
                     </p>
+                    {claim.adminRemark && (
+                      <div className="mt-2 p-2 rounded-lg bg-bg border-l-4 border-primary/40">
+                        <p className="text-[10px] font-black uppercase text-primary/70 mb-0.5">Admin Note</p>
+                        <p className="text-xs italic opacity-80" style={{ color: 'var(--color-text)' }}>
+                          "{claim.adminRemark}"
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -233,10 +268,16 @@ export default function MyClaims() {
                     size="sm"
                     variant="outline"
                     onClick={() => setShowUpload(claim.claimId)}
-                    className="flex-1 sm:flex-none rounded-xl font-bold border-dashed hover:border-solid text-xs py-2"
-                    style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+                    disabled={claim.hasDocument || (claim.status !== 'SUBMITTED' && claim.status !== 'UNDER_REVIEW')}
+                    className="flex-1 sm:flex-none rounded-xl font-bold border-dashed hover:border-solid text-xs py-2 disabled:opacity-50 disabled:grayscale"
+                    style={{ 
+                      borderColor: claim.hasDocument || (claim.status !== 'SUBMITTED' && claim.status !== 'UNDER_REVIEW') ? 'var(--color-border)' : 'var(--color-primary)', 
+                      color: claim.hasDocument || (claim.status !== 'SUBMITTED' && claim.status !== 'UNDER_REVIEW') ? 'var(--color-text-secondary)' : 'var(--color-primary)' 
+                    }}
+                    title={claim.hasDocument ? 'Document already uploaded' : (claim.status !== 'SUBMITTED' && claim.status !== 'UNDER_REVIEW') ? 'Claim is already processed' : 'Upload supporting documents'}
                   >
-                    <HiUpload className="w-3.5 h-3.5 mr-1" /> Upload
+                    <HiUpload className="w-3.5 h-3.5 mr-1" /> 
+                    {claim.hasDocument ? 'Uploaded' : 'Upload'}
                   </Button>
                   <Button
                     size="sm"

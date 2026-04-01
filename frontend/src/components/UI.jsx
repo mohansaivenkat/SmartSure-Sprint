@@ -221,12 +221,13 @@ export function Textarea({ label, error, ...props }) {
     <div className="space-y-1.5">
       {label && <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{label}</label>}
       <textarea
-        className="w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-200 focus:ring-2 resize-none"
+        className="w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-200 focus:ring-2 resize-y min-h-[120px]"
         style={{
           backgroundColor: 'var(--color-bg)',
           color: 'var(--color-text)',
+          '--tw-ring-color': 'var(--color-primary)',
         }}
-        rows={4}
+        rows={6}
         {...props}
       />
       {error && <p className="text-xs" style={{ color: 'var(--color-danger)' }}>{error}</p>}

@@ -65,19 +65,22 @@ public class AuthServiceImpl implements IAuthService {
 	
     @Transactional
 	public UserResponseDTO register(RegisterRequest request) {
-        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+        String sanitizedEmail = request.getEmail().trim().toLowerCase();
+        Optional<User> existingUser = userRepository.findByEmail(sanitizedEmail);
 
         if (existingUser.isPresent()) {
             throw new com.group2.auth_service.exception.UserAlreadyExistsException("Email is already registered.");
         } 
         
-        // Verify OTP was verified in Notification Service
-        Boolean isVerified = notificationClient.isOtpVerified(request.getEmail()).getBody();
+        // Use sanitizedEmail for subsequent steps
+        Boolean isVerified = notificationClient.isOtpVerified(sanitizedEmail).getBody();
         if (Boolean.FALSE.equals(isVerified)) {
             throw new RuntimeException("OTP not verified for registration.");
         }
         
-        notificationClient.markOtpAsUsed(request.getEmail());
+        notificationClient.markOtpAsUsed(sanitizedEmail);
+
+        request.setEmail(sanitizedEmail); // update request with sanitized email
 
         User user = authMapper.mapToUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));    
@@ -87,51 +90,69 @@ public class AuthServiceImpl implements IAuthService {
 	}
 
 	public AuthResponse login(LoginRequest request) {
-	    Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
+	    String sanitizedEmail = request.getEmail().trim().toLowerCase();
+	    Optional<User> userOpt = userRepository.findByEmail(sanitizedEmail);
 	    
 	    if (userOpt.isPresent()) {
 	        User user = userOpt.get();        
 
 	        if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-	            String token = jwtUtil.generateToken(user.getEmail(), user.getId(),user.getRole().name());
-	            return new AuthResponse(token, user.getRole().name(), user.getId());
+	            String token = jwtUtil.generateToken(user.getEmail(), user.getId(), user.getRole().name());
+	            String refreshToken = jwtUtil.generateRefreshToken(user.getEmail(), user.getId());
+	            return new AuthResponse(token, refreshToken, user.getRole().name(), user.getId());
 	        }
 	    }
 	    throw new RuntimeException("Invalid credentials");
 	}
 
+	public AuthResponse refreshToken(String refreshToken) {
+	    if (jwtUtil.validateToken(refreshToken)) {
+	        String email = jwtUtil.extractEmail(refreshToken);
+	        Long userId = jwtUtil.extractUserId(refreshToken);
+	        User user = userRepository.findById(userId)
+	                .orElseThrow(() -> new RuntimeException("User not found"));
+	        
+	        String newToken = jwtUtil.generateToken(email, userId, user.getRole().name());
+	        return new AuthResponse(newToken, refreshToken, user.getRole().name(), user.getId());
+	    }
+	    throw new RuntimeException("Invalid refresh token");
+	}
+
     public void sendRegistrationOtp(String email) {
-        if (userRepository.findByEmail(email).isPresent()) {
+        String sanitizedEmail = email.trim().toLowerCase();
+        if (userRepository.findByEmail(sanitizedEmail).isPresent()) {
             throw new com.group2.auth_service.exception.UserAlreadyExistsException("Email is already registered.");
         }
-        notificationClient.sendOtp(email);
+        notificationClient.sendOtp(sanitizedEmail);
     }
 
     public void verifyOtp(String email, String otp) {
-        notificationClient.verifyOtp(email, otp);
+        notificationClient.verifyOtp(email.trim().toLowerCase(), otp);
     }
 
     public void sendForgotPasswordOtp(String email) {
-        if (userRepository.findByEmail(email).isEmpty()) {
+        String sanitizedEmail = email.trim().toLowerCase();
+        if (userRepository.findByEmail(sanitizedEmail).isEmpty()) {
             throw new RuntimeException("User with this email does not exist.");
         }
-        notificationClient.sendOtp(email);
+        notificationClient.sendOtp(sanitizedEmail);
     }
 
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        Boolean isVerified = notificationClient.isOtpVerified(request.getEmail()).getBody();
+        String sanitizedEmail = request.getEmail().trim().toLowerCase();
+        Boolean isVerified = notificationClient.isOtpVerified(sanitizedEmail).getBody();
         if (Boolean.FALSE.equals(isVerified)) {
             throw new RuntimeException("OTP not verified for password reset.");
         }
 
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(sanitizedEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
         
-        notificationClient.markOtpAsUsed(request.getEmail());
+        notificationClient.markOtpAsUsed(sanitizedEmail);
     }
 
     @Transactional

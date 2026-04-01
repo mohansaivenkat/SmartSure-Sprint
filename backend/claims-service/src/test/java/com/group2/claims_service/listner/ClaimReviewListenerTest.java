@@ -35,12 +35,13 @@ public class ClaimReviewListenerTest {
         ClaimReviewEvent event = new ClaimReviewEvent();
         event.setClaimId(1L);
         event.setStatus("APPROVED");
+        event.setRemark("Test Remark");
 
-        doNothing().when(claimService).updateClaimStatus(1L, "APPROVED");
+        doNothing().when(claimService).updateClaimStatus(1L, "APPROVED", "Test Remark");
 
         claimReviewListener.handleClaimReview(event);
 
-        verify(claimService, times(1)).updateClaimStatus(eq(1L), eq("APPROVED"));
+        verify(claimService, times(1)).updateClaimStatus(eq(1L), eq("APPROVED"), eq("Test Remark"));
     }
 
     /**
@@ -53,11 +54,12 @@ public class ClaimReviewListenerTest {
         ClaimReviewEvent event = new ClaimReviewEvent();
         event.setClaimId(1L);
         event.setStatus("APPROVED");
+        event.setRemark("Test Remark");
 
-        doThrow(new RuntimeException("DB Error")).when(claimService).updateClaimStatus(1L, "APPROVED");
+        doThrow(new RuntimeException("DB Error")).when(claimService).updateClaimStatus(1L, "APPROVED", "Test Remark");
 
         assertDoesNotThrow(() -> claimReviewListener.handleClaimReview(event));
         
-        verify(claimService, times(1)).updateClaimStatus(eq(1L), eq("APPROVED"));
+        verify(claimService, times(1)).updateClaimStatus(eq(1L), eq("APPROVED"), eq("Test Remark"));
     }
 }

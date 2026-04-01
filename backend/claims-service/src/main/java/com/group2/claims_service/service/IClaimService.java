@@ -13,7 +13,7 @@ public interface IClaimService {
     ClaimDocument getClaimDocument(Long claimId);
     ClaimResponseDTO getClaimStatus(Long claimId);
     ClaimResponseDTO getClaimById(Long claimId);
-    void updateClaimStatus(Long claimId, String newStatus);
+    void updateClaimStatus(Long claimId, String newStatus, String remark);
     List<ClaimResponseDTO> getClaimsByUserId(Long userId);
     List<ClaimResponseDTO> getAllClaims();
     ClaimStatsDTO getClaimStats();

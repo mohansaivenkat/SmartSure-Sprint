@@ -9,7 +9,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import lombok.extern.slf4j.Slf4j;
 
 import com.group2.claims_service.dto.ClaimCreatedEvent;
 import com.group2.claims_service.dto.ClaimRequestDTO;
@@ -22,31 +21,53 @@ import com.group2.claims_service.exception.ClaimNotFoundException;
 import com.group2.claims_service.repository.ClaimDocumentRepository;
 import com.group2.claims_service.repository.ClaimRepository;
 import com.group2.claims_service.util.ClaimMapper;
-
+import org.slf4j.*;
 
 @Service
-@Slf4j
 public class ClaimServiceImpl implements IClaimService {
 	
 	private final ClaimRepository claimRepository;
 	private final ClaimDocumentRepository documentRepository;
 	private final com.group2.claims_service.feign.AuthClient authClient;
+	private final com.group2.claims_service.feign.PolicyClient policyClient;
 	private final RabbitTemplate rabbitTemplate;
 	private final ClaimMapper claimMapper;
+	
+	private static final Logger log = LoggerFactory.getLogger(ClaimServiceImpl.class);
 	
 	public ClaimServiceImpl(ClaimRepository claimRepository, 
                             ClaimDocumentRepository documentRepository, 
                             com.group2.claims_service.feign.AuthClient authClient,
+                            com.group2.claims_service.feign.PolicyClient policyClient,
                             RabbitTemplate rabbitTemplate,
                             ClaimMapper claimMapper) {
 		this.claimRepository = claimRepository;
 		this.documentRepository = documentRepository;
 		this.authClient = authClient;
+		this.policyClient = policyClient;
 		this.rabbitTemplate = rabbitTemplate;
 		this.claimMapper = claimMapper;
 	}
 	
 	public ClaimResponseDTO initateClaim(ClaimRequestDTO requestDTO) {
+        // Strict Policy Verification: Verify status and ownership via policy-service
+        try {
+            com.group2.claims_service.feign.UserPolicyDTO policy = policyClient.getUserPolicyById(requestDTO.getPolicyId());
+            if (policy == null) {
+                throw new RuntimeException("Invalid Policy ID provided.");
+            }
+            if (!"ACTIVE".equals(policy.getStatus())) {
+                throw new RuntimeException("Claim initiation failed: Policy status is " + policy.getStatus() + ". Claims can only be filed for ACTIVE policies.");
+            }
+            if (!policy.getUserId().equals(requestDTO.getUserId())) {
+                throw new RuntimeException("Fraud detected: You do not own this policy.");
+            }
+        } catch (RuntimeException re) {
+            throw re; // Rethrow business exceptions
+        } catch (Exception e) {
+            log.error("Policy verification failed for claim: {}", e.getMessage());
+            throw new RuntimeException("Policy verification system is currently unavailable. Please try again later.");
+        }
 
 	    Claim claim = claimMapper.mapToEntity(requestDTO);
         claim.setClaimStatus(ClaimStatus.SUBMITTED);
@@ -125,6 +146,8 @@ public class ClaimServiceImpl implements IClaimService {
 				.orElseThrow(()-> new ClaimNotFoundException("Claim not found with id: "+claimId));
 		
 		ClaimResponseDTO response = claimMapper.mapToResponse(claim);
+		populateHasDocument(response);
+		populateAdminRemark(response, claim);
 		response.setMessage("Claim Status fetched Successfully");
 		
 		return response;
@@ -137,74 +160,101 @@ public class ClaimServiceImpl implements IClaimService {
 	                    new ClaimNotFoundException("Claim not found with id: " + claimId));
 
 	    ClaimResponseDTO response = claimMapper.mapToResponse(claim);
+	    populateHasDocument(response);
+	    populateAdminRemark(response, claim);
 	    response.setMessage("Claim fetched successfully");
 
 	    return response;
 	}
-	
-	public void updateClaimStatus(Long claimId, String newStatus) {
+    public void updateClaimStatus(Long claimId, String newStatus, String remark) {
 
-		Claim claim = claimRepository.findById(claimId)
-				.orElseThrow(() -> new ClaimNotFoundException("Claim not found with id: " + claimId));
+        Claim claim = claimRepository.findById(claimId)
+                .orElseThrow(() -> new ClaimNotFoundException("Claim not found with id: " + claimId));
 
-		ClaimStatus targetStatus;
-		try {
-			targetStatus = ClaimStatus.valueOf(newStatus.toUpperCase());
-		} catch (IllegalArgumentException e) {
-			throw new RuntimeException("Invalid claim status: " + newStatus);
-		}
+        ClaimStatus targetStatus;
+        try {
+            targetStatus = ClaimStatus.valueOf(newStatus.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid claim status: " + newStatus);
+        }
 
-		ClaimStatus currentStatus = claim.getClaimStatus();
-		boolean validTransition = switch (targetStatus) {
-			case UNDER_REVIEW -> currentStatus == ClaimStatus.SUBMITTED || currentStatus == ClaimStatus.CLOSED;
-			case APPROVED, REJECTED -> currentStatus == ClaimStatus.UNDER_REVIEW;
-			case CLOSED -> currentStatus == ClaimStatus.APPROVED || currentStatus == ClaimStatus.REJECTED;
-			default -> false;
-		};
+        ClaimStatus currentStatus = claim.getClaimStatus();
+        boolean validTransition = switch (targetStatus) {
+            case UNDER_REVIEW -> currentStatus == ClaimStatus.SUBMITTED || currentStatus == ClaimStatus.CLOSED;
+            case APPROVED, REJECTED -> currentStatus == ClaimStatus.UNDER_REVIEW;
+            case CLOSED -> currentStatus == ClaimStatus.APPROVED || currentStatus == ClaimStatus.REJECTED;
+            default -> false;
+        };
 
-		if (!validTransition) {
-			throw new RuntimeException(
-					"Invalid status transition from " + currentStatus + " to " + targetStatus);
-		}
+        if (!validTransition) {
+            throw new RuntimeException(
+                    "Invalid status transition from " + currentStatus + " to " + targetStatus);
+        }
 
-		claim.setClaimStatus(targetStatus);
-		claimRepository.save(claim);
+        claim.setClaimStatus(targetStatus);
+        if (remark != null) {
+            claim.setAdminRemark(remark);
+        }
+        claimRepository.save(claim);
 
-		if (targetStatus == ClaimStatus.APPROVED || targetStatus == ClaimStatus.REJECTED) {
-			log.info("Status transition to {}, publishing notification event for claimId: {}", targetStatus, claimId);
-			try {
-				com.group2.claims_service.feign.UserDTO user = authClient.getUserById(claim.getUserId());
-				if (user != null && user.getEmail() != null) {
-					String subject = "Claim " + targetStatus;
-					String body = "Your claim with ID " + claim.getId() + " has been " + targetStatus + ".";
-					com.group2.claims_service.dto.NotificationEvent evt = new com.group2.claims_service.dto.NotificationEvent(user.getEmail(), subject, body);
-					rabbitTemplate.convertAndSend("notification.exchange", "notification.email", evt);
-					log.info("Published notification event for claimId: {} to RabbitMQ", claimId);
-				} else {
-					log.warn("Could not find user email for userId: {}, claim notification skipped", claim.getUserId());
-				}
-			} catch(Exception e) {
-				log.error("Failed to send notification event for claimId {}: {}", claimId, e.getMessage());
-			}
-		}
-	}
-	
-	public List<ClaimResponseDTO> getClaimsByUserId(Long userId) {
-		return claimRepository.findByUserId(userId)
-				.stream()
-				.map(claimMapper::mapToResponse)
-				.peek(dto -> dto.setMessage("Claim fetched successfully"))
-				.toList();
-	}
+        if (targetStatus == ClaimStatus.APPROVED || targetStatus == ClaimStatus.REJECTED) {
+            log.info("Status transition to {}, publishing notification event for claimId: {}", targetStatus, claimId);
+            try {
+                com.group2.claims_service.feign.UserDTO user = authClient.getUserById(claim.getUserId());
+                if (user != null && user.getEmail() != null) {
+                    String subject = "Insurance Claim Update: #" + claim.getId() + " — " + targetStatus;
+                    String body = "Hello,\n\nYour claim tracking number #" + claim.getId() + " for Policy #" + claim.getPolicyId() + " has been officially " + targetStatus + ".\n\n" +
+                                (remark != null ? "Admin Remark: " + remark + "\n\n" : "") +
+                                "You can view the full details on your dashboard.\n\nBest regards,\nSmartSure Management Team";
+                    
+                    com.group2.claims_service.dto.NotificationEvent evt = new com.group2.claims_service.dto.NotificationEvent(user.getEmail(), subject, body);
+                    rabbitTemplate.convertAndSend("notification.exchange", "notification.email", evt);
+                    log.info("Published notification event for claimId: {} to RabbitMQ", claimId);
+                }
+            } catch(Exception e) {
+                log.error("Failed to send notification for claimId {}: {}", claimId, e.getMessage());
+            }
+        }
+    }
 
-	public List<ClaimResponseDTO> getAllClaims() {
-		return claimRepository.findAll()
-				.stream()
-				.map(claimMapper::mapToResponse)
-				.peek(dto -> dto.setMessage("Claim fetched successfully"))
-				.toList();
-	}
-	
+    private void populateHasDocument(ClaimResponseDTO dto) {
+        if (dto != null && dto.getClaimId() != null) {
+            dto.setHasDocument(documentRepository.existsByClaimId(dto.getClaimId()));
+        }
+    }
+
+    private void populateAdminRemark(ClaimResponseDTO dto, Claim claim) {
+        if (dto != null && claim != null) {
+            dto.setAdminRemark(claim.getAdminRemark());
+        }
+    }
+
+    public List<ClaimResponseDTO> getClaimsByUserId(Long userId) {
+        return claimRepository.findByUserId(userId)
+                .stream()
+                .map(c -> {
+                    ClaimResponseDTO r = claimMapper.mapToResponse(c);
+                    populateHasDocument(r);
+                    populateAdminRemark(r, c);
+                    r.setMessage("Claim fetched successfully");
+                    return r;
+                })
+                .toList();
+    }
+
+    public List<ClaimResponseDTO> getAllClaims() {
+        return claimRepository.findAll()
+                .stream()
+                .map(c -> {
+                    ClaimResponseDTO r = claimMapper.mapToResponse(c);
+                    populateHasDocument(r);
+                    populateAdminRemark(r, c);
+                    r.setMessage("Claim fetched successfully");
+                    return r;
+                })
+                .toList();
+    }
+
 	public ClaimStatsDTO getClaimStats() {
 
 	    long total = claimRepository.count();

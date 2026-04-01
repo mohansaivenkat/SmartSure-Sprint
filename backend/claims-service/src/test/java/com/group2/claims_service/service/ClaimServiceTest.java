@@ -150,7 +150,7 @@ public class ClaimServiceTest {
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
         when(claimRepository.save(any(Claim.class))).thenReturn(claim);
 
-        claimService.updateClaimStatus(1L, "UNDER_REVIEW");
+        claimService.updateClaimStatus(1L, "UNDER_REVIEW", "Testing");
 
         assertEquals(ClaimStatus.UNDER_REVIEW, claim.getClaimStatus());
         verify(claimRepository, times(1)).save(claim);
@@ -160,7 +160,7 @@ public class ClaimServiceTest {
     void testUpdateClaimStatus_InvalidTransition() {
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
-        assertThrows(RuntimeException.class, () -> claimService.updateClaimStatus(1L, "APPROVED"));
+        assertThrows(RuntimeException.class, () -> claimService.updateClaimStatus(1L, "APPROVED", "Testing"));
         verify(claimRepository, times(0)).save(any(Claim.class));
     }
 

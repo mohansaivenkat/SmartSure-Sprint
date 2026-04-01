@@ -48,6 +48,7 @@ public class PolicyMapper {
         if (userPolicy.getPolicy() != null) {
             dto.setPolicyName(userPolicy.getPolicy().getPolicyName());
             dto.setPremiumAmount(userPolicy.getPolicy().getPremiumAmount());
+            dto.setPolicyId(userPolicy.getPolicy().getId());
         }
         dto.setStartDate(userPolicy.getStartDate());
         dto.setEndDate(userPolicy.getEndDate());

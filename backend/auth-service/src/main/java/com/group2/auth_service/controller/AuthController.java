@@ -86,4 +86,9 @@ public class AuthController {
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
         return ResponseEntity.ok(service.getAllUsers());
     }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<AuthResponse> refreshToken(@RequestParam String refreshToken) {
+        return ResponseEntity.ok(service.refreshToken(refreshToken));
+    }
 }

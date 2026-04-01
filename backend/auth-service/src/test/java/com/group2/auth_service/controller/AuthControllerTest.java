@@ -42,7 +42,7 @@ public class AuthControllerTest {
 
     @Test
     void login() {
-        AuthResponse response = new AuthResponse("token", "CUSTOMER", 1L);
+        AuthResponse response = new AuthResponse("token", "CUSTOMER", "rfdh", 1L);
         when(authService.login(any())).thenReturn(response);
         
         ResponseEntity<AuthResponse> res = authController.login(new LoginRequest());

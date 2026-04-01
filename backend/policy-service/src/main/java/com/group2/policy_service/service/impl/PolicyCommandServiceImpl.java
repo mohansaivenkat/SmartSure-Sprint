@@ -27,8 +27,10 @@ import com.group2.policy_service.util.PolicyMapper;
 import com.group2.policy_service.feign.AuthClient;
 import lombok.extern.slf4j.Slf4j;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
-@Slf4j
 public class PolicyCommandServiceImpl implements IPolicyCommandService {
 
     private final PolicyRepository policyRepository;
@@ -37,6 +39,8 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
     private final PolicyMapper mapper;
     private final AuthClient authClient;
     private final RabbitTemplate rabbitTemplate;
+    
+    private static final Logger log = LoggerFactory.getLogger(PolicyCommandServiceImpl.class);
 
     public PolicyCommandServiceImpl(PolicyRepository policyRepository,
                                UserPolicyRepository userPolicyRepository,
@@ -61,6 +65,14 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
         Policy policy = policyRepository.findById(policyId)
                 .orElseThrow(() -> new RuntimeException("Policy not found"));
 
+        if (userPolicyRepository.findByUserId(userId).stream()
+                .anyMatch(up -> up.getPolicy().getId().equals(policyId) && 
+                        (up.getStatus() == PolicyStatus.ACTIVE || 
+                         up.getStatus() == PolicyStatus.PENDING_CANCELLATION || 
+                         up.getStatus() == PolicyStatus.CANCELLED))) {
+            throw new RuntimeException("You already have a subscription history for this policy.");
+        }
+
         UserPolicy userPolicy = new UserPolicy();
         userPolicy.setUserId(userId);
         userPolicy.setPolicy(policy);
@@ -72,11 +84,31 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
         userPolicy.setNextDueDate(LocalDate.now().plusMonths(1));
 
         userPolicyRepository.save(userPolicy);
+
+        // Send Purchase Notification
+        try {
+            com.group2.policy_service.feign.UserDTO user = authClient.getUserById(userId);
+            if (user != null && user.getEmail() != null) {
+                log.info("Publishing policy purchase notification for user: {}", user.getEmail());
+                String subject = "Policy Purchase Successful";
+                String message = String.format("Congratulations! You have successfully purchased the policy: %s. \nPolicy ID: %d \nPremium Amount: \u20B9%.2f \nEnd Date: %s",
+                        policy.getPolicyName(), userPolicy.getId(), userPolicy.getPremiumAmount(), userPolicy.getEndDate());
+                
+                com.group2.policy_service.dto.NotificationEvent event = new com.group2.policy_service.dto.NotificationEvent(
+                        user.getEmail(), subject, message);
+                
+                rabbitTemplate.convertAndSend("notification.exchange", "notification.email", event);
+                log.info("Policy purchase event published successfully");
+            }
+        } catch (Exception e) {
+            log.error("Failed to send purchase notification: {}", e.getMessage());
+        }
+
         return mapper.mapToUserPolicyResponse(userPolicy);
     }
 
     @Transactional
-    @CacheEvict(value = "user_policies", key = "#userPolicyId")
+    @CacheEvict(value = "user_policies", allEntries = true)
     public UserPolicyResponseDTO requestCancellation(Long userPolicyId) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long currentUserId = (principal instanceof Long) ? (Long) principal : Long.parseLong(principal.toString());
@@ -107,7 +139,7 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
     }
 
     @Transactional
-    @CacheEvict(value = "user_policies", key = "#userPolicyId")
+    @CacheEvict(value = "user_policies", allEntries = true)
     public UserPolicyResponseDTO approveCancellation(Long userPolicyId) {
         UserPolicy userPolicy = userPolicyRepository.findById(userPolicyId)
                 .orElseThrow(() -> new RuntimeException("Policy not found"));
@@ -191,6 +223,26 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
         double currentBalance = userPolicy.getOutstandingBalance() != null ? userPolicy.getOutstandingBalance() : 0.0;
         userPolicy.setOutstandingBalance(Math.max(0, currentBalance - amount));
         userPolicyRepository.save(userPolicy);
+
+        // Send Payment Confirmation Email
+        try {
+            com.group2.policy_service.feign.UserDTO user = authClient.getUserById(userPolicy.getUserId());
+            if (user != null && user.getEmail() != null) {
+                log.info("Publishing payment confirmation notification for user: {}", user.getEmail());
+                String subject = "Payment Successful";
+                String message = String.format("A payment of ₹%.2f has been successfully processed for your policy: %s. \nRemaining Balance: ₹%.2f", 
+                        amount, userPolicy.getPolicy().getPolicyName(), userPolicy.getOutstandingBalance());
+                
+                com.group2.policy_service.dto.NotificationEvent event = new com.group2.policy_service.dto.NotificationEvent(
+                        user.getEmail(), subject, message);
+                
+                rabbitTemplate.convertAndSend("notification.exchange", "notification.email", event);
+                log.info("Payment confirmation event published successfully");
+            }
+        } catch (Exception e) {
+            log.error("Failed to send payment confirmation notification: {}", e.getMessage());
+        }
+
         return mapper.mapToUserPolicyResponse(userPolicy);
     }
 }

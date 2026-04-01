@@ -5,7 +5,7 @@ import {
   HiDownload, HiUser, HiChevronRight, HiRefresh, HiClock,
   HiArrowRight, HiMail, HiPhone
 } from 'react-icons/hi';
-import { PageHeader, Card, Badge, Button, Modal, Input } from '../../components/UI';
+import { PageHeader, Card, Badge, Button, Modal, Input, Textarea } from '../../components/UI';
 import LoadingSpinner, { ErrorMessage, EmptyState } from '../../components/UI';
 import toast from 'react-hot-toast';
 
@@ -253,6 +253,7 @@ export default function AdminClaims() {
 
   const [showReview, setShowReview] = useState(null);
   const [reviewStatus, setReviewStatus] = useState('');
+  const [reviewRemark, setReviewRemark] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const [showDetail, setShowDetail] = useState(null);
@@ -298,11 +299,15 @@ export default function AdminClaims() {
 
   const handleReview = async () => {
     if (!reviewStatus) { toast.error('Please select a status'); return; }
+    if ((reviewStatus === 'APPROVED' || reviewStatus === 'REJECTED') && !reviewRemark.trim()) {
+      toast.error('Please provide a remark for approval/rejection');
+      return;
+    }
     setSubmitting(true);
     try {
-      await adminAPI.reviewClaim(showReview, { status: reviewStatus });
+      await adminAPI.reviewClaim(showReview, { status: reviewStatus, remark: reviewRemark });
       toast.success('Claim status updated!');
-      setShowReview(null); setReviewStatus('');
+      setShowReview(null); setReviewStatus(''); setReviewRemark('');
       // Refresh both local and global claim state
       setTimeout(() => { 
         if (selectedUser) fetchClaims(selectedUser.id);
@@ -712,6 +717,18 @@ export default function AdminClaims() {
             )}
           </div>
 
+           {(reviewStatus === 'APPROVED' || reviewStatus === 'REJECTED') && (
+            <div className="fade-up">
+              <Textarea
+                label="Admin Remark *"
+                value={reviewRemark}
+                onChange={e => setReviewRemark(e.target.value)}
+                placeholder="Explain the reason for this decision (this will be sent to the customer)..."
+                rows={3}
+              />
+            </div>
+          )}
+
           {currentReviewingClaim?.status === 'CLOSED' && (
             <p style={{ fontSize: 10, textAlign: 'center', fontStyle: 'italic', color: 'var(--color-text-secondary)', opacity: .55, margin: 0 }}>
               Reopening a closed claim will move it back to "Under Review".
@@ -719,7 +736,7 @@ export default function AdminClaims() {
           )}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 16, borderTop: '1px solid var(--color-border)', marginTop: 4 }}>
-            <Button variant="ghost" onClick={() => { setShowReview(null); setReviewStatus(''); }}>Cancel</Button>
+            <Button variant="ghost" onClick={() => { setShowReview(null); setReviewStatus(''); setReviewRemark(''); }}>Cancel</Button>
             <Button onClick={handleReview} loading={submitting} disabled={!reviewStatus}>Update Status</Button>
           </div>
         </div>

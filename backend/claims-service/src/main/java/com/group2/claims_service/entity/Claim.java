@@ -11,12 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 
-import lombok.Getter;
-import lombok.Setter;
-
 @Entity
-@Getter
-@Setter
 public class Claim extends BaseEntity {
 	
 	@Id
@@ -29,8 +24,17 @@ public class Claim extends BaseEntity {
 	
 	@Enumerated(EnumType.STRING)
 	private ClaimStatus claimStatus;
-
 	
+	private String adminRemark;
+
+	public String getAdminRemark() {
+		return adminRemark;
+	}
+
+	public void setAdminRemark(String adminRemark) {
+		this.adminRemark = adminRemark;
+	}
+
 	public Long getId() {
 		return id;
 	}
@@ -79,12 +83,5 @@ public class Claim extends BaseEntity {
 		this.claimStatus = claimStatus;
 	}
 
-	@Override
-	public String toString() {
-		return "Claim [id=" + id + ", policyId=" + policyId + ", userId=" + userId + ", claimAmount=" + claimAmount
-				+ ", description=" + description + ", claimStatus=" + claimStatus + ", createdAt=" + getCreatedAt() + "]";
-	}
-	
-	
-	
 }
+

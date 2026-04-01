@@ -14,6 +14,20 @@ public class FeignConfig {
     public RequestInterceptor requestInterceptor() {
         return requestTemplate -> {
             requestTemplate.header(GATEWAY_SECRET_HEADER, GATEWAY_SECRET_VALUE);
+
+            // Forward current Authorization header
+            org.springframework.web.context.request.RequestAttributes attributes = 
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+
+            if (attributes instanceof org.springframework.web.context.request.ServletRequestAttributes) {
+                jakarta.servlet.http.HttpServletRequest currentRequest = 
+                    ((org.springframework.web.context.request.ServletRequestAttributes) attributes).getRequest();
+
+                String authHeader = currentRequest.getHeader("Authorization");
+                if (authHeader != null) {
+                    requestTemplate.header("Authorization", authHeader);
+                }
+            }
         };
     }
 }

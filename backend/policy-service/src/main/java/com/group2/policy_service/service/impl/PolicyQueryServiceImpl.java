@@ -78,4 +78,10 @@ public class PolicyQueryServiceImpl implements IPolicyQueryService {
         stats.setTotalRevenue(totalPremiums != null ? totalPremiums : 0.0);
         return stats;
     }
+
+    public UserPolicyResponseDTO getUserPolicyById(Long id) {
+        return userPolicyRepository.findById(id)
+                .map(mapper::mapToUserPolicyResponse)
+                .orElseThrow(() -> new RuntimeException("User policy not found with id: " + id));
+    }
 }

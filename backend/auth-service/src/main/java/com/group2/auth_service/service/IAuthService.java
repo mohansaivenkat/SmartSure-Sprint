@@ -20,4 +20,5 @@ public interface IAuthService {
     UserResponseDTO updateProfile(UserProfileRequest request);
     UserResponseDTO getUserById(Long id);
     List<UserResponseDTO> getAllUsers();
+    AuthResponse refreshToken(String refreshToken);
 }

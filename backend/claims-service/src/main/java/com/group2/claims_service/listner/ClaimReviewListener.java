@@ -6,10 +6,9 @@ import org.springframework.stereotype.Component;
 import com.group2.claims_service.dto.ClaimReviewEvent;
 import com.group2.claims_service.service.IClaimService;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.*;
 
 @Component
-@Slf4j
 public class ClaimReviewListener {
 
     private final IClaimService claimService;
@@ -17,6 +16,8 @@ public class ClaimReviewListener {
     public ClaimReviewListener(IClaimService claimService) {
         this.claimService = claimService;
     }
+    
+    private static final Logger log = LoggerFactory.getLogger(ClaimReviewListener.class);
 
     @RabbitListener(queues = "claim.review.queue")
     public void handleClaimReview(ClaimReviewEvent request) {
@@ -24,7 +25,8 @@ public class ClaimReviewListener {
         try {
             claimService.updateClaimStatus(
                     request.getClaimId(),
-                    request.getStatus()
+                    request.getStatus(),
+                    request.getRemark()
             );
             log.info("Claim {} updated to status {} successfully", request.getClaimId(), request.getStatus());
         } catch (Exception e) {

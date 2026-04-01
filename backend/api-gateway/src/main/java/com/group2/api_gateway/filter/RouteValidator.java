@@ -16,6 +16,7 @@ public class RouteValidator {
             "/api/auth/forgot-password/send-otp",
             "/api/auth/forgot-password/verify-otp",
             "/api/auth/reset-password",
+            "/api/auth/refresh-token",
             "/v3/api-docs",
             "/swagger-ui",
             "/swagger-ui.html",

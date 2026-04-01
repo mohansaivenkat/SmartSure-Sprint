@@ -1,5 +1,7 @@
 package com.group2.claims_service.dto;
 
+import java.time.LocalDateTime;
+
 public class ClaimResponseDTO {
 
 	private Long claimId;
@@ -9,6 +11,25 @@ public class ClaimResponseDTO {
 	private String message;
 	private Double claimAmount;
 	private String description;
+	private LocalDateTime createdAt;
+	private Boolean hasDocument;
+	private String adminRemark;
+
+	public String getAdminRemark() {
+		return adminRemark;
+	}
+
+	public void setAdminRemark(String adminRemark) {
+		this.adminRemark = adminRemark;
+	}
+
+	public Boolean getHasDocument() {
+		return hasDocument;
+	}
+
+	public void setHasDocument(Boolean hasDocument) {
+		this.hasDocument = hasDocument;
+	}
 
 	public Long getClaimId() {
 		return claimId;
@@ -65,6 +86,14 @@ public class ClaimResponseDTO {
 	public void setDescription(String description) {
 		this.description = description;
 	}
-	
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
 
 }
+

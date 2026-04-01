@@ -9,11 +9,14 @@ import com.group2.notification_service.service.INotificationService;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.slf4j.*;
 @Component
 @Slf4j
 public class NotificationEventListener {
 
     private final INotificationService notificationService;
+    
+    private static final Logger log = LoggerFactory.getLogger(NotificationEventListener.class);
 
     public NotificationEventListener(INotificationService notificationService) {
         this.notificationService = notificationService;

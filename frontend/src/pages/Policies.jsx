@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { policyAPI, paymentAPI } from '../services/api';
-import { HiShieldCheck, HiClock, HiCurrencyRupee, HiDocumentText, HiSearch } from 'react-icons/hi';
+import { HiShieldCheck, HiClock, HiCurrencyRupee, HiDocumentText, HiSearch, HiCheckCircle } from 'react-icons/hi';
 import { PageHeader, Card, Button } from '../components/UI';
 import LoadingSpinner, { ErrorMessage, EmptyState } from '../components/UI';
 import toast from 'react-hot-toast';
@@ -16,6 +17,7 @@ export default function Policies() {
   const [filterType, setFilterType] = useState('ALL');
   const [purchasing, setPurchasing] = useState(null);
   
+  const [userPolicies, setUserPolicies] = useState([]);
   const PAGE_SIZE = 6;
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -32,17 +34,43 @@ export default function Policies() {
     }
   };
 
-  useEffect(() => { fetchPolicies(); }, []);
+  const fetchUserPolicies = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await policyAPI.getUserPolicies(user.id);
+      setUserPolicies(res.data);
+    } catch (err) {
+      console.log('Error fetching user policies', err);
+    }
+  };
+
+  useEffect(() => { 
+    fetchPolicies(); 
+    if (user?.id) fetchUserPolicies();
+  }, [user?.id]);
 
   const handlePurchase = async (policy) => {
     setPurchasing(policy.id);
     try {
       // Step 1: Create Razorpay Order
-      const orderRes = await paymentAPI.createOrder({
-        userId: user.id,
-        policyId: policy.id,
-        amount: policy.premiumAmount,
-      });
+      const userId = user?.id || user?.userId || user?._id;
+      const policyId = policy?.id || policy?.policyId;
+      const amount = Number(policy?.premiumAmount || policy?.amount || policy?.price);
+
+      const paymentData = {
+        userId,
+        policyId,
+        amount,
+      };
+
+      console.log('Sending payment data:', paymentData, { user, policy });
+
+      if (!paymentData.userId || !paymentData.policyId || Number.isNaN(paymentData.amount) || paymentData.amount <= 0) {
+        toast.error('Unable to initiate payment: invalid user/policy/amount. Please re-login and try again.');
+        throw new Error('Invalid payment data: ensure logged in and selected policy amount is valid.');
+      }
+      const orderRes = await paymentAPI.createOrder(paymentData);
+      console.log('Order response:', orderRes);
 
       const { orderId } = orderRes.data;
 
@@ -64,8 +92,15 @@ export default function Policies() {
             });
 
             // Step 4: Activate policy
-            await policyAPI.purchasePolicy(policy.id);
-            toast.success('Policy purchased successfully!');
+            const purchasedPolicyRes = await policyAPI.purchasePolicy(policy.id);
+            
+            // Immediately update the local owned list to disable the button before redirect
+            setUserPolicies(prev => [...prev, purchasedPolicyRes.data]);
+            
+            toast.success('Policy purchased successfully! Redirecting to your portfolio...');
+            setTimeout(() => {
+              navigate('/my-policies');
+            }, 1500);
           } catch (err) {
             toast.error('Payment verified but policy activation failed. Contact support.');
           }
@@ -84,15 +119,19 @@ export default function Policies() {
         rzp.open();
       } else {
         // Fallback: direct purchase without payment
-        await policyAPI.purchasePolicy(policy.id);
-        toast.success('Policy purchased successfully!');
+        const purchasedPolicyRes = await policyAPI.purchasePolicy(policy.id);
+        setUserPolicies(prev => [...prev, purchasedPolicyRes.data]);
+        toast.success('Policy purchased successfully! Redirecting...');
+        setTimeout(() => navigate('/my-policies'), 1500);
       }
     } catch (err) {
       // If Payment service is down, allow direct purchase
       if (err.response?.status === 500 || err.code === 'ERR_NETWORK') {
         try {
-          await policyAPI.purchasePolicy(policy.id);
-          toast.success('Policy purchased successfully!');
+          const purchasedPolicyRes = await policyAPI.purchasePolicy(policy.id);
+          setUserPolicies(prev => [...prev, purchasedPolicyRes.data]);
+          toast.success('Policy purchased successfully! Redirecting...');
+          setTimeout(() => navigate('/my-policies'), 1500);
         } catch (purchaseErr) {
           const errorMsg = purchaseErr.response?.data?.message || 
                            (typeof purchaseErr.response?.data === 'string' ? purchaseErr.response.data : 'Failed to purchase policy');
@@ -223,7 +262,8 @@ export default function Policies() {
                     </div>
                   </div>
 
-                  <p className="text-xs mb-8 flex-1 leading-relaxed opacity-70" style={{ color: 'var(--color-text-secondary)' }}>
+                  <p className="text-sm mb-8 flex-1 leading-relaxed opacity-80 italic whitespace-pre-wrap" 
+                     style={{ color: 'var(--color-text-secondary)', minHeight: '4.5em' }}>
                     {policy.description}
                   </p>
 
@@ -242,33 +282,41 @@ export default function Policies() {
                   {/* Separator */}
                   <div className="border-t mb-6" style={{ borderColor: 'var(--color-border)' }} />
 
-                  {/* Price & Purchase CTA */}
-                  <div className="flex items-center justify-between mt-auto">
-                    <div>
-                      <p className="text-[10px] font-bold opacity-50 uppercase mb-0.5">Premium</p>
-                      <div className="flex items-baseline gap-0.5">
-                        <span className="text-xl font-black tracking-tight" style={{ color: 'var(--color-text)' }}>
-                          ₹{policy.premiumAmount?.toLocaleString()}
-                        </span>
-                        <span className="text-[10px] font-bold opacity-50">/mo</span>
+                    {/* Price & Purchase CTA */}
+                    <div className="flex items-center justify-between mt-auto">
+                      <div>
+                        <p className="text-[10px] font-bold opacity-50 uppercase mb-0.5">Premium</p>
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-xl font-black tracking-tight" style={{ color: 'var(--color-text)' }}>
+                            ₹{policy.premiumAmount?.toLocaleString()}
+                          </span>
+                          <span className="text-[10px] font-bold opacity-50">/mo</span>
+                        </div>
                       </div>
-                    </div>
 
-                    <Button
-                      onClick={() => handlePurchase(policy)}
-                      loading={purchasing === policy.id}
-                      disabled={purchasing === policy.id}
-                      className="px-5 py-2.5 text-xs font-bold shadow-sm transition-all hover:translate-y-[-1px] active:translate-y-[0px]"
-                      style={{ borderRadius: '0.85rem', backgroundColor: accentColor, color: '#fff' }}
-                    >
-                      <HiCurrencyRupee className="w-4 h-4 mr-1.5" />
-                      Buy Policy
-                    </Button>
+                      {userPolicies.some(up => up.policyId === policy.id && (up.status === 'ACTIVE' || up.status === 'PENDING_CANCELLATION' || up.status === 'CANCELLED')) ? (
+                        <div className="px-5 py-2.5 text-xs font-bold shadow-sm flex items-center justify-center opacity-60 cursor-not-allowed"
+                             style={{ borderRadius: '0.85rem', backgroundColor: 'var(--color-bg)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}>
+                          <HiCheckCircle className="w-4 h-4 mr-1.5" />
+                          Owned
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => handlePurchase(policy)}
+                          loading={purchasing === policy.id}
+                          disabled={purchasing === policy.id}
+                          className="px-5 py-2.5 text-xs font-bold shadow-sm transition-all hover:translate-y-[-1px] active:translate-y-[0px]"
+                          style={{ borderRadius: '0.85rem', backgroundColor: accentColor, color: '#fff' }}
+                        >
+                          <HiCurrencyRupee className="w-4 h-4 mr-1.5" />
+                          Buy Policy
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            );
-          })}
+                </Card>
+              );
+            })}
         </div>
       )}
 

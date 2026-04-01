@@ -19,12 +19,16 @@ public class UserPolicyResponseDTO implements Serializable {
 
     private Double outstandingBalance;
     private LocalDate nextDueDate;
+    private Long policyId; 
 
 	public Double getOutstandingBalance() { return outstandingBalance; }
 	public void setOutstandingBalance(Double outstandingBalance) { this.outstandingBalance = outstandingBalance; }
 
 	public LocalDate getNextDueDate() { return nextDueDate; }
 	public void setNextDueDate(LocalDate nextDueDate) { this.nextDueDate = nextDueDate; }
+
+	public Long getPolicyId() { return policyId; }
+	public void setPolicyId(Long policyId) { this.policyId = policyId; }
 
 	public Long getId() {
 		return id;

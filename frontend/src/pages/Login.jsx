@@ -22,7 +22,7 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await authAPI.login({ email, password });
-      const { token, role, id } = res.data;
+      const { token, refreshToken, role, id } = res.data;
       
       // Fetch full profile - manually pass token since it's not in localStorage yet
       const userRes = await authAPI.getUserById(id, { 
@@ -30,7 +30,7 @@ export default function Login() {
       });
       
       const fullUser = { ...userRes.data, token };
-      login(fullUser, token);
+      login(fullUser, token, refreshToken);
       toast.success('Welcome back!');
       navigate(role === 'ADMIN' ? '/admin/dashboard' : '/dashboard');
     } catch (err) {

@@ -14,22 +14,25 @@ export function AuthProvider({ children }) {
       } catch {
         localStorage.removeItem('user');
         localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
       }
     }
     setLoading(false);
   }, []);
 
-  const login = (userData, token) => {
+  const login = (userData, token, refreshToken) => {
     const userInfo = { ...userData, token };
     setUser(userInfo);
     localStorage.setItem('user', JSON.stringify(userInfo));
     localStorage.setItem('token', token);
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
   };
 
   const isAdmin = () => user?.role === 'ADMIN';

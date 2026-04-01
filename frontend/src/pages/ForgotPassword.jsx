@@ -22,7 +22,8 @@ export default function ForgotPassword() {
       toast.success('OTP sent to your email');
       setStep(2);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'User not found');
+      const errorMsg = err.response?.data || 'User not found';
+      toast.error(typeof errorMsg === 'string' ? errorMsg : (errorMsg.message || 'User not found'));
     } finally {
       setLoading(false);
     }
@@ -40,7 +41,8 @@ export default function ForgotPassword() {
       toast.success('Password reset successfully!');
       navigate('/login');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Invalid OTP or session expired');
+      const errorMsg = err.response?.data || 'Invalid OTP or session expired';
+      toast.error(typeof errorMsg === 'string' ? errorMsg : (errorMsg.message || 'Invalid OTP or session expired'));
     } finally {
       setLoading(false);
     }

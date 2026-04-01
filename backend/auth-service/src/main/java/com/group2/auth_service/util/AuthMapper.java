@@ -14,7 +14,7 @@ public class AuthMapper {
         if (request == null) return null;
         User user = new User();
         user.setName(request.getName());
-        user.setEmail(request.getEmail());
+        user.setEmail(request.getEmail() != null ? request.getEmail().trim().toLowerCase() : null);
         user.setPhone(request.getPhone());
         user.setAddress(request.getAddress());
         return user;

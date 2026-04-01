@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface ClaimDocumentRepository extends JpaRepository<ClaimDocument, Long>{
 	Optional<ClaimDocument> findByClaimId(Long claimId);
+	boolean existsByClaimId(Long claimId);
 }
