@@ -68,9 +68,8 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
         if (userPolicyRepository.findByUserId(userId).stream()
                 .anyMatch(up -> up.getPolicy().getId().equals(policyId) && 
                         (up.getStatus() == PolicyStatus.ACTIVE || 
-                         up.getStatus() == PolicyStatus.PENDING_CANCELLATION || 
-                         up.getStatus() == PolicyStatus.CANCELLED))) {
-            throw new RuntimeException("You already have a subscription history for this policy.");
+                         up.getStatus() == PolicyStatus.PENDING_CANCELLATION))) {
+            throw new RuntimeException("You already have an active or pending subscription for this policy.");
         }
 
         UserPolicy userPolicy = new UserPolicy();
@@ -82,6 +81,7 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
         userPolicy.setEndDate(LocalDate.now().plusMonths(policy.getDurationInMonths()));
         userPolicy.setOutstandingBalance(policy.getPremiumAmount());
         userPolicy.setNextDueDate(LocalDate.now().plusMonths(1));
+        userPolicy.setCoverageAmount(policy.getCoverageAmount());
 
         userPolicyRepository.save(userPolicy);
 

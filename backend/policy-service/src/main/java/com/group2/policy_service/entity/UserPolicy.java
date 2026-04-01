@@ -38,6 +38,16 @@ public class UserPolicy extends BaseEntity {
 	private Double outstandingBalance;
 
 	private LocalDate nextDueDate;
+	
+	private Double coverageAmount;
+
+	public Double getCoverageAmount() {
+		return coverageAmount;
+	}
+
+	public void setCoverageAmount(Double coverageAmount) {
+		this.coverageAmount = coverageAmount;
+	}
 
 	public Double getOutstandingBalance() {
 		return outstandingBalance;

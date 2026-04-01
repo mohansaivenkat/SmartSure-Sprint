@@ -294,11 +294,11 @@ export default function Policies() {
                         </div>
                       </div>
 
-                      {userPolicies.some(up => up.policyId === policy.id && (up.status === 'ACTIVE' || up.status === 'PENDING_CANCELLATION' || up.status === 'CANCELLED')) ? (
+                      {userPolicies.some(up => up.policyId === policy.id && (up.status === 'ACTIVE' || up.status === 'PENDING_CANCELLATION')) ? (
                         <div className="px-5 py-2.5 text-xs font-bold shadow-sm flex items-center justify-center opacity-60 cursor-not-allowed"
                              style={{ borderRadius: '0.85rem', backgroundColor: 'var(--color-bg)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}>
                           <HiCheckCircle className="w-4 h-4 mr-1.5" />
-                          Owned
+                          {userPolicies.find(up => up.policyId === policy.id && up.status === 'PENDING_CANCELLATION') ? 'Pending' : 'Owned'}
                         </div>
                       ) : (
                         <Button
