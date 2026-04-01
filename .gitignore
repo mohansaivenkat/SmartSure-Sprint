@@ -30,6 +30,7 @@ Thumbs.db
 .classpath
 .settings/
 .metadata/
+.metadata_backup/
 .vscode/
 
 # Docker
