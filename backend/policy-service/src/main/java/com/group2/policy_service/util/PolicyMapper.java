@@ -55,6 +55,7 @@ public class PolicyMapper {
         dto.setStatus(userPolicy.getStatus());
         dto.setOutstandingBalance(userPolicy.getOutstandingBalance());
         dto.setNextDueDate(userPolicy.getNextDueDate());
+        dto.setCoverageAmount(userPolicy.getCoverageAmount());
         return dto;
     }
 }

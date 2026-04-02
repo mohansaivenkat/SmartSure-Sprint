@@ -20,6 +20,10 @@ public class UserPolicyResponseDTO implements Serializable {
     private Double outstandingBalance;
     private LocalDate nextDueDate;
     private Long policyId; 
+    private Double coverageAmount;
+
+	public Double getCoverageAmount() { return coverageAmount; }
+	public void setCoverageAmount(Double coverageAmount) { this.coverageAmount = coverageAmount; }
 
 	public Double getOutstandingBalance() { return outstandingBalance; }
 	public void setOutstandingBalance(Double outstandingBalance) { this.outstandingBalance = outstandingBalance; }
