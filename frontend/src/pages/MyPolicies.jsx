@@ -300,6 +300,13 @@ export default function MyPolicies() {
                             {policy.durationInMonths || 12}m term
                           </span>
                           <span
+                            className="text-xs flex items-center gap-1"
+                            style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}
+                          >
+                            <HiShieldCheck className="w-3.5 h-3.5" />
+                            ₹{(policy.coverageAmount/100000).toFixed(1)}L Coverage
+                          </span>
+                          <span
                             className="text-xs hidden sm:inline"
                             style={{ color: 'var(--color-text-secondary)' }}
                           >
