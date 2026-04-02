@@ -16,6 +16,8 @@ import com.group2.policy_service.dto.PolicyCancellationEvent;
 import com.group2.policy_service.dto.PolicyRequestDTO;
 import com.group2.policy_service.dto.PolicyResponseDTO;
 import com.group2.policy_service.dto.UserPolicyResponseDTO;
+import com.group2.policy_service.dto.EmailRequest;
+import com.group2.policy_service.dto.NotificationEvent;
 import com.group2.policy_service.entity.Policy;
 import com.group2.policy_service.entity.PolicyStatus;
 import com.group2.policy_service.entity.PolicyType;
@@ -25,7 +27,8 @@ import com.group2.policy_service.repository.PolicyTypeRepository;
 import com.group2.policy_service.repository.UserPolicyRepository;
 import com.group2.policy_service.util.PolicyMapper;
 import com.group2.policy_service.feign.AuthClient;
-import lombok.extern.slf4j.Slf4j;
+import com.group2.policy_service.feign.NotificationClient;
+import com.group2.policy_service.feign.UserDTO;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +41,7 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
     private final PolicyTypeRepository policyTypeRepository;
     private final PolicyMapper mapper;
     private final AuthClient authClient;
+    private final NotificationClient notificationClient;
     private final RabbitTemplate rabbitTemplate;
     
     private static final Logger log = LoggerFactory.getLogger(PolicyCommandServiceImpl.class);
@@ -47,12 +51,14 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
                                PolicyTypeRepository policyTypeRepository,
                                PolicyMapper mapper,
                                AuthClient authClient,
+                               NotificationClient notificationClient,
                                RabbitTemplate rabbitTemplate) {
         this.policyRepository = policyRepository;
         this.userPolicyRepository = userPolicyRepository;
         this.policyTypeRepository = policyTypeRepository;
         this.mapper = mapper;
         this.authClient = authClient;
+        this.notificationClient = notificationClient;
         this.rabbitTemplate = rabbitTemplate;
     }
 
@@ -87,21 +93,43 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
 
         // Send Purchase Notification
         try {
-            com.group2.policy_service.feign.UserDTO user = authClient.getUserById(userId);
+            UserDTO user = authClient.getUserById(userId);
             if (user != null && user.getEmail() != null) {
-                log.info("Publishing policy purchase notification for user: {}", user.getEmail());
-                String subject = "Policy Purchase Successful";
-                String message = String.format("Congratulations! You have successfully purchased the policy: %s. \nPolicy ID: %d \nPremium Amount: \u20B9%.2f \nEnd Date: %s",
-                        policy.getPolicyName(), userPolicy.getId(), userPolicy.getPremiumAmount(), userPolicy.getEndDate());
+                String subject = "SmartSure: Policy Purchase Successful";
+                String htmlBody = String.format(
+                    "<html><body style='font-family: Arial, sans-serif; color: #333; line-height: 1.6;'>" +
+                    "<div style='max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;'>" +
+                    "<div style='background: #1e3c72; color: white; padding: 20px; text-align: center;'>" +
+                    "<h1 style='margin: 0;'>🛡️ SmartSure</h1>" +
+                    "</div>" +
+                    "<div style='padding: 20px;'>" +
+                    "<h2>Congratulations %s!</h2>" +
+                    "<p>You have successfully purchased a new insurance policy.</p>" +
+                    "<div style='background: #f4f7f6; padding: 15px; border-radius: 5px; border-left: 5px solid #1e3c72;'>" +
+                    "<strong>Policy Name:</strong> %s<br/>" +
+                    "<strong>Premium Amount:</strong> ₹%.2f<br/>" +
+                    "<strong>Coverage:</strong> ₹%.2f<br/>" +
+                    "<strong>Expiry Date:</strong> %s" +
+                    "</div>" +
+                    "<p style='margin-top: 20px;'>Thank you for choosing SmartSure for your protection.</p>" +
+                    "</div>" +
+                    "<div style='background: #f9f9f9; padding: 10px; text-align: center; font-size: 12px; color: #777;'>" +
+                    "&copy; 2026 SmartSure Insurance Management System" +
+                    "</div></div></body></html>",
+                    user.getName(), policy.getPolicyName(), userPolicy.getPremiumAmount(), userPolicy.getCoverageAmount(), userPolicy.getEndDate()
+                );
                 
-                com.group2.policy_service.dto.NotificationEvent event = new com.group2.policy_service.dto.NotificationEvent(
-                        user.getEmail(), subject, message);
-                
-                rabbitTemplate.convertAndSend("notification.exchange", "notification.email", event);
-                log.info("Policy purchase event published successfully");
+                // Primary: Feign
+                try {
+                    notificationClient.sendEmail(new EmailRequest(user.getEmail(), subject, htmlBody));
+                    log.info("📧 Policy purchase notification sent via Feign to: {}", user.getEmail());
+                } catch (Exception feignEx) {
+                    NotificationEvent event = new NotificationEvent(user.getEmail(), subject, htmlBody);
+                    rabbitTemplate.convertAndSend("notification.exchange", "notification.email", event);
+                }
             }
         } catch (Exception e) {
-            log.error("Failed to send purchase notification: {}", e.getMessage());
+            log.error("Failed to process purchase notification: {}", e.getMessage());
         }
 
         return mapper.mapToUserPolicyResponse(userPolicy);
@@ -127,13 +155,44 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
         userPolicy.setStatus(PolicyStatus.PENDING_CANCELLATION);
         userPolicyRepository.save(userPolicy);
 
-        // Saga Trigger
-        PolicyCancellationEvent event = new PolicyCancellationEvent(
-                userPolicy.getId(),
-                userPolicy.getUserId(),
-                LocalDateTime.now()
-        );
-        rabbitTemplate.convertAndSend(RabbitMQConfig.POLICY_EXCHANGE, RabbitMQConfig.CANCELLATION_ROUTING_KEY, event);
+        // Send Cancellation Request Email
+        try {
+            UserDTO user = authClient.getUserById(currentUserId);
+            String subject = "SmartSure: Cancellation Request Received";
+            String htmlBody = String.format(
+                "<html><body style='font-family: Arial, sans-serif; color: #333;'>" +
+                "<div style='max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;'>" +
+                "<div style='background: #e67e22; color: white; padding: 20px; text-align: center;'>" +
+                "<h1 style='margin: 0;'>⚠️ Cancellation Request</h1>" +
+                "</div>" +
+                "<div style='padding: 20px;'>" +
+                "<p>Hello %s,</p>" +
+                "<p>We have received your request to cancel your policy: <strong>%s</strong>.</p>" +
+                "<p>Our administration team is currently reviewing your request. You will be notified once the review is complete.</p>" +
+                "<p>No further action is required from your side at this moment.</p>" +
+                "</div>" +
+                "<div style='background: #f9f9f9; padding: 10px; text-align: center; font-size: 12px; color: #777;'>" +
+                "&copy; 2026 SmartSure Insurance Management System" +
+                "</div></div></body></html>",
+                user.getName(), userPolicy.getPolicy().getPolicyName()
+            );
+            notificationClient.sendEmail(new EmailRequest(user.getEmail(), subject, htmlBody));
+            log.info("📧 Cancellation request notification sent via Feign to: {}", user.getEmail());
+        } catch (Exception e) {
+            log.warn("⚠️ Cancellation request email failed (Feign): {}", e.getMessage());
+        }
+
+        // Saga Trigger (RabbitMQ - Optional for STS users)
+        try {
+            PolicyCancellationEvent event = new PolicyCancellationEvent(
+                    userPolicy.getId(),
+                    userPolicy.getUserId(),
+                    LocalDateTime.now()
+            );
+            rabbitTemplate.convertAndSend(RabbitMQConfig.POLICY_EXCHANGE, RabbitMQConfig.CANCELLATION_ROUTING_KEY, event);
+        } catch (Exception e) {
+            log.warn("⚠️ RabbitMQ saga event failed: {}", e.getMessage());
+        }
 
         return mapper.mapToUserPolicyResponse(userPolicy);
     }
@@ -152,19 +211,37 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
         userPolicyRepository.save(userPolicy);
 
         try {
-            com.group2.policy_service.feign.UserDTO user = authClient.getUserById(userPolicy.getUserId());
+            UserDTO user = authClient.getUserById(userPolicy.getUserId());
             if (user != null && user.getEmail() != null) {
-                log.info("Publishing policy cancellation notification for user: {}", user.getEmail());
-                String subject = "Policy Cancelled";
-                String body = "Your policy with ID " + userPolicy.getPolicy().getId() + " has been successfully cancelled.";
-                com.group2.policy_service.dto.NotificationEvent evt = new com.group2.policy_service.dto.NotificationEvent(user.getEmail(), subject, body);
-                rabbitTemplate.convertAndSend("notification.exchange", "notification.email", evt);
-                log.info("Policy cancellation event published successfully");
-            } else {
-                log.warn("User or email not found for userId: {}, skipping notification", userPolicy.getUserId());
+                String subject = "SmartSure: Policy Cancellation Approved";
+                String htmlBody = String.format(
+                    "<html><body style='font-family: Arial, sans-serif; color: #333;'>" +
+                    "<div style='max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;'>" +
+                    "<div style='background: #c0392b; color: white; padding: 20px; text-align: center;'>" +
+                    "<h1 style='margin: 0;'>🚫 Policy Cancelled</h1>" +
+                    "</div>" +
+                    "<div style='padding: 20px;'>" +
+                    "<p>Hello %s,</p>" +
+                    "<p>Your cancellation request for policy <strong>%s</strong> has been <strong>Approved</strong>.</p>" +
+                    "<p>The policy has been successfully terminated. Any associated benefits will no longer be available.</p>" +
+                    "</div>" +
+                    "<div style='background: #f9f9f9; padding: 10px; text-align: center; font-size: 12px; color: #777;'>" +
+                    "&copy; 2026 SmartSure Insurance Management System" +
+                    "</div></div></body></html>",
+                    user.getName(), userPolicy.getPolicy().getPolicyName()
+                );
+                
+                // Direct Feign
+                try {
+                    notificationClient.sendEmail(new EmailRequest(user.getEmail(), subject, htmlBody));
+                    log.info("📧 Policy cancellation approval sent via Feign to: {}", user.getEmail());
+                } catch (Exception feignEx) {
+                    NotificationEvent evt = new NotificationEvent(user.getEmail(), subject, htmlBody);
+                    rabbitTemplate.convertAndSend("notification.exchange", "notification.email", evt);
+                }
             }
         } catch(Exception e) {
-            log.error("Failed to send policy cancellation notification: {}", e.getMessage());
+            log.error("Failed to process policy cancellation notification: {}", e.getMessage());
         }
 
         return mapper.mapToUserPolicyResponse(userPolicy);
@@ -226,21 +303,40 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
 
         // Send Payment Confirmation Email
         try {
-            com.group2.policy_service.feign.UserDTO user = authClient.getUserById(userPolicy.getUserId());
+            UserDTO user = authClient.getUserById(userPolicy.getUserId());
             if (user != null && user.getEmail() != null) {
-                log.info("Publishing payment confirmation notification for user: {}", user.getEmail());
-                String subject = "Payment Successful";
-                String message = String.format("A payment of ₹%.2f has been successfully processed for your policy: %s. \nRemaining Balance: ₹%.2f", 
-                        amount, userPolicy.getPolicy().getPolicyName(), userPolicy.getOutstandingBalance());
+                String subject = "SmartSure: Premium Payment Successful";
+                String htmlBody = String.format(
+                    "<html><body style='font-family: Arial, sans-serif; color: #333;'>" +
+                    "<div style='max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;'>" +
+                    "<div style='background: #27ae60; color: white; padding: 20px; text-align: center;'>" +
+                    "<h1 style='margin: 0;'>💰 Payment Received</h1>" +
+                    "</div>" +
+                    "<div style='padding: 20px;'>" +
+                    "<p>Hello %s,</p>" +
+                    "<p>A premium payment has been successfully processed for your policy: <strong>%s</strong>.</p>" +
+                    "<div style='background: #f4f7f6; padding: 15px; border-radius: 5px; border-left: 5px solid #27ae60;'>" +
+                    "<strong>Amount Paid:</strong> ₹%.2f<br/>" +
+                    "<strong>Remaining Balance:</strong> ₹%.2f" +
+                    "</div>" +
+                    "<p style='margin-top: 20px;'>Thank you for keeping your policy active!</p>" +
+                    "</div>" +
+                    "<div style='background: #f9f9f9; padding: 10px; text-align: center; font-size: 12px; color: #777;'>" +
+                    "&copy; 2026 SmartSure Insurance Management System" +
+                    "</div></div></body></html>",
+                    user.getName(), userPolicy.getPolicy().getPolicyName(), amount, userPolicy.getOutstandingBalance()
+                );
                 
-                com.group2.policy_service.dto.NotificationEvent event = new com.group2.policy_service.dto.NotificationEvent(
-                        user.getEmail(), subject, message);
-                
-                rabbitTemplate.convertAndSend("notification.exchange", "notification.email", event);
-                log.info("Payment confirmation event published successfully");
+                try {
+                    notificationClient.sendEmail(new EmailRequest(user.getEmail(), subject, htmlBody));
+                    log.info("📧 Payment confirmation notification sent via Feign to: {}", user.getEmail());
+                } catch (Exception feignEx) {
+                    NotificationEvent event = new NotificationEvent(user.getEmail(), subject, htmlBody);
+                    rabbitTemplate.convertAndSend("notification.exchange", "notification.email", event);
+                }
             }
         } catch (Exception e) {
-            log.error("Failed to send payment confirmation notification: {}", e.getMessage());
+            log.error("Failed to process payment confirmation notification: {}", e.getMessage());
         }
 
         return mapper.mapToUserPolicyResponse(userPolicy);

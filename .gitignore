@@ -52,3 +52,5 @@ coverage/
 jacoco.exec
 
 backend/all_application_properties.txt
+.agents/*
+skills-lock.json

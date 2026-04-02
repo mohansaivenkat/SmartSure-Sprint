@@ -15,6 +15,7 @@ public class RabbitMQConfig {
     public static final String CANCELLATION_QUEUE = "policy.cancellation.queue";
     public static final String POLICY_EXCHANGE = "policy.exchange";
     public static final String CANCELLATION_ROUTING_KEY = "policy.cancellation";
+    public static final String NOTIFICATION_EXCHANGE = "notification.exchange";
 
     @Bean
     public Queue cancellationQueue() {
@@ -29,6 +30,11 @@ public class RabbitMQConfig {
     @Bean
     public Binding binding(Queue cancellationQueue, DirectExchange policyExchange) {
         return BindingBuilder.bind(cancellationQueue).to(policyExchange).with(CANCELLATION_ROUTING_KEY);
+    }
+
+    @Bean
+    public org.springframework.amqp.core.TopicExchange notificationExchange() {
+        return new org.springframework.amqp.core.TopicExchange(NOTIFICATION_EXCHANGE);
     }
 
     @Bean

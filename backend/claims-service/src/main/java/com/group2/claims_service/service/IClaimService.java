@@ -8,7 +8,7 @@ import com.group2.claims_service.dto.ClaimStatsDTO;
 import com.group2.claims_service.entity.ClaimDocument;
 
 public interface IClaimService {
-    ClaimResponseDTO initateClaim(ClaimRequestDTO requestDTO);
+    ClaimResponseDTO initiateClaim(ClaimRequestDTO requestDTO);
     String uploadDocument(Long claimId, MultipartFile file);
     ClaimDocument getClaimDocument(Long claimId);
     ClaimResponseDTO getClaimStatus(Long claimId);

@@ -50,7 +50,7 @@ public class ClaimControllerTest {
      */
     @Test
     void testInitiateClaim() {
-        when(claimService.initateClaim(any(ClaimRequestDTO.class))).thenReturn(responseDTO);
+        when(claimService.initiateClaim(any(ClaimRequestDTO.class))).thenReturn(responseDTO);
 
         ResponseEntity<ClaimResponseDTO> res = claimController.initiateClaim(new ClaimRequestDTO());
         assertEquals(200, res.getStatusCode().value());

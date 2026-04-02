@@ -6,18 +6,22 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.group2.claims_service.dto.ClaimCreatedEvent;
+import com.group2.claims_service.dto.NotificationEvent;
 import com.group2.claims_service.dto.ClaimRequestDTO;
 import com.group2.claims_service.dto.ClaimResponseDTO;
 import com.group2.claims_service.dto.ClaimStatsDTO;
+import com.group2.claims_service.dto.EmailRequest;
 import com.group2.claims_service.entity.Claim;
 import com.group2.claims_service.entity.ClaimDocument;
 import com.group2.claims_service.entity.ClaimStatus;
 import com.group2.claims_service.exception.ClaimNotFoundException;
+import com.group2.claims_service.feign.AuthClient;
+import com.group2.claims_service.feign.NotificationClient;
+import com.group2.claims_service.feign.PolicyClient;
+import com.group2.claims_service.feign.UserDTO;
 import com.group2.claims_service.feign.UserPolicyDTO;
 import com.group2.claims_service.repository.ClaimDocumentRepository;
 import com.group2.claims_service.repository.ClaimRepository;
@@ -29,8 +33,9 @@ public class ClaimServiceImpl implements IClaimService {
 	
 	private final ClaimRepository claimRepository;
 	private final ClaimDocumentRepository documentRepository;
-	private final com.group2.claims_service.feign.AuthClient authClient;
-	private final com.group2.claims_service.feign.PolicyClient policyClient;
+	private final AuthClient authClient;
+	private final PolicyClient policyClient;
+	private final NotificationClient notificationClient;
 	private final RabbitTemplate rabbitTemplate;
 	private final ClaimMapper claimMapper;
 	
@@ -38,19 +43,22 @@ public class ClaimServiceImpl implements IClaimService {
 	
 	public ClaimServiceImpl(ClaimRepository claimRepository, 
                             ClaimDocumentRepository documentRepository, 
-                            com.group2.claims_service.feign.AuthClient authClient,
-                            com.group2.claims_service.feign.PolicyClient policyClient,
+                            AuthClient authClient,
+                            PolicyClient policyClient,
+                            NotificationClient notificationClient,
                             RabbitTemplate rabbitTemplate,
                             ClaimMapper claimMapper) {
 		this.claimRepository = claimRepository;
 		this.documentRepository = documentRepository;
 		this.authClient = authClient;
 		this.policyClient = policyClient;
+		this.notificationClient = notificationClient;
 		this.rabbitTemplate = rabbitTemplate;
 		this.claimMapper = claimMapper;
 	}
 	
-	public ClaimResponseDTO initateClaim(ClaimRequestDTO requestDTO) {
+    @Override
+    public ClaimResponseDTO initiateClaim(ClaimRequestDTO requestDTO) {
         // Strict Policy Verification: Verify status and ownership via policy-service
         try {
             UserPolicyDTO policy = policyClient.getUserPolicyById(requestDTO.getPolicyId());
@@ -61,13 +69,22 @@ public class ClaimServiceImpl implements IClaimService {
                 throw new RuntimeException("Claim initiation failed: Policy status is " + policy.getStatus() + ". Claims can only be filed for ACTIVE policies.");
             }
             if (!policy.getUserId().equals(requestDTO.getUserId())) {
+                log.warn("Ownership mismatch: Policy owner userId is {}, but request userId is {}", policy.getUserId(), requestDTO.getUserId());
                 throw new RuntimeException("Fraud detected: You do not own this policy.");
             }
         } catch (RuntimeException re) {
-            throw re; // Rethrow business exceptions
+            log.error("Business validation failed for claim: {}", re.getMessage());
+            throw re; 
         } catch (Exception e) {
             log.error("Policy verification failed for claim: {}", e.getMessage());
-            throw new RuntimeException("Policy verification system is currently unavailable. Please try again later.");
+            // Improved error reporting: if it's a Feign error, try to provide more detail
+            if (e.getMessage().contains("404")) {
+                throw new RuntimeException("Policy verification failed: Policy ID not found in system.");
+            }
+            if (e.getMessage().contains("401") || e.getMessage().contains("403")) {
+                throw new RuntimeException("Policy verification failed: Authorization error when checking policy ownership.");
+            }
+            throw new RuntimeException("Policy verification system is currently unavailable (" + e.getClass().getSimpleName() + "). Please try again later.");
         }
 
 	    Claim claim = claimMapper.mapToEntity(requestDTO);
@@ -76,25 +93,67 @@ public class ClaimServiceImpl implements IClaimService {
 
 	    Claim savedClaim = claimRepository.save(claim);
 
-	    ClaimCreatedEvent event = new ClaimCreatedEvent();
-	    event.setClaimId(savedClaim.getId());
-	    event.setPolicyId(savedClaim.getPolicyId());
-	    event.setUserId(savedClaim.getUserId());
-	    event.setClaimAmount(savedClaim.getClaimAmount());
+        // 3. Direct synchronous email notification via Feign (STS user fix)
+        String subject = "Claim Submitted";
+        String htmlBody = "";
+        UserDTO user = null;
+        try {
+            user = authClient.getUserById(savedClaim.getUserId());
+            if (user != null && user.getEmail() != null) {
+                subject = "SmartSure: Claim Submitted Successfully";
+                String policyName = "Your Policy";
+                try {
+                    UserPolicyDTO up = policyClient.getUserPolicyById(savedClaim.getPolicyId());
+                    if (up != null && up.getPolicyName() != null) {
+                        policyName = up.getPolicyName();
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not fetch policy name for claim notification: {}", e.getMessage());
+                }
 
-	    rabbitTemplate.convertAndSend(
-	            "claim.exchange",
-	            "claim.created",
-	            event
-	    );
+                htmlBody = String.format(
+                    "<html><body style='font-family: Arial, sans-serif; color: #333;'>" +
+                    "<div style='max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;'>" +
+                    "<div style='background: #2980b9; color: white; padding: 20px; text-align: center;'>" +
+                    "<h1 style='margin: 0;'>🛡️ Claim Received</h1>" +
+                    "</div>" +
+                    "<div style='padding: 20px;'>" +
+                    "<p>Hello %s,</p>" +
+                    "<p>We have successfully received your claim request for: <strong>%s</strong>.</p>" +
+                    "<div style='background: #f4f7f6; padding: 15px; border-radius: 5px; border-left: 5px solid #2980b9;'>" +
+                    "<strong>Claim Amount:</strong> ₹%.2f<br/>" +
+                    "<strong>Status:</strong> Under Review" +
+                    "</div>" +
+                    "<p style='margin-top: 20px;'>Our claims department will review your submission and provide an update within 2-3 business days. You can track this in your dashboard.</p>" +
+                    "</div>" +
+                    "<div style='background: #f9f9f9; padding: 10px; text-align: center; font-size: 12px; color: #777;'>" +
+                    "&copy; 2026 SmartSure Insurance Management System" +
+                    "</div></div></body></html>",
+                    user.getName(), policyName, savedClaim.getClaimAmount()
+                );
+                
+                try {
+                    notificationClient.sendEmail(new EmailRequest(user.getEmail(), subject, htmlBody));
+                    log.info("📧 Claim submission notification sent via Feign to: {}", user.getEmail());
+                } catch (Exception feignEx) {
+                    log.warn("⚠️ Feign email failed, falling back to RabbitMQ...");
+                    NotificationEvent event = new NotificationEvent();
+                    event.setEmail(user.getEmail());
+                    event.setSubject(subject);
+                    event.setMessage(htmlBody);
+                    rabbitTemplate.convertAndSend("notification.exchange", "notification.send", event);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to process claim notification: {}", e.getMessage());
+            // Last resort fallback if user fetch failed but we have data
+            if (user == null && savedClaim != null) {
+                 log.warn("Could not even fetch user for claim notification.");
+            }
+        }
 
-	    log.info("✅ Claim event sent to RabbitMQ for claimId: {}", savedClaim.getId());
-
-	    ClaimResponseDTO response = claimMapper.mapToResponse(savedClaim);
-	    response.setMessage("Claim submitted successfully");
-
-	    return response;
-	}
+        return claimMapper.mapToResponse(savedClaim);
+    }
 	
 	public String uploadDocument(Long claimId, MultipartFile file) {
 		

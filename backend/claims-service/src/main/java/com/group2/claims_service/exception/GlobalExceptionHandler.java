@@ -9,9 +9,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 	
 	 @ExceptionHandler(ClaimNotFoundException.class)
-	    public ResponseEntity<String> handleClaimNotFound(ClaimNotFoundException ex) {
-
-	        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+	    public ResponseEntity<java.util.Map<String, String>> handleClaimNotFound(ClaimNotFoundException ex) {
+	        java.util.Map<String, String> error = new java.util.HashMap<>();
+	        error.put("message", ex.getMessage());
+	        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
 	    }
 	    
 	    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
@@ -22,10 +23,14 @@ public class GlobalExceptionHandler {
 	        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
 	    }
 	    
-	    @ExceptionHandler(RuntimeException.class)
-	    public ResponseEntity<java.util.Map<String, String>> handleRuntimeException(RuntimeException ex) {
-	        java.util.Map<String, String> error = new java.util.HashMap<>();
-	        error.put("message", ex.getMessage());
-	        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-	    }
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<java.util.Map<String, String>> handleRuntimeException(RuntimeException ex) {
+        log.error("Unhandled runtime exception: ", ex);
+        java.util.Map<String, String> error = new java.util.HashMap<>();
+        error.put("message", ex.getMessage());
+        error.put("status", "500");
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }

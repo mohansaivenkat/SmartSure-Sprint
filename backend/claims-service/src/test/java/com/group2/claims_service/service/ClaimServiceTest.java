@@ -23,7 +23,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import com.group2.claims_service.dto.ClaimCreatedEvent;
 import com.group2.claims_service.dto.ClaimRequestDTO;
@@ -38,6 +37,10 @@ import com.group2.claims_service.repository.ClaimRepository;
 import com.group2.claims_service.service.impl.ClaimServiceImpl;
 import com.group2.claims_service.util.ClaimMapper;
 import com.group2.claims_service.feign.AuthClient;
+import com.group2.claims_service.feign.PolicyClient;
+import com.group2.claims_service.feign.NotificationClient;
+import com.group2.claims_service.feign.UserDTO;
+import com.group2.claims_service.feign.UserPolicyDTO;
 
 @ExtendWith(MockitoExtension.class)
 public class ClaimServiceTest {
@@ -53,6 +56,12 @@ public class ClaimServiceTest {
 
     @Mock
     private AuthClient authClient;
+    
+    @Mock
+    private PolicyClient policyClient;
+
+    @Mock
+    private NotificationClient notificationClient;
 
     @Mock
     private ClaimMapper claimMapper;
@@ -89,12 +98,25 @@ public class ClaimServiceTest {
         requestDTO.setClaimAmount(5000.0);
         requestDTO.setDescription("Car Damage");
 
+        UserDTO user = new UserDTO();
+        user.setId(200L);
+        user.setEmail("test@example.com");
+        user.setName("Test User");
+
+        UserPolicyDTO userPolicy = new UserPolicyDTO();
+        userPolicy.setStatus("ACTIVE");
+        userPolicy.setUserId(200L);
+
+        when(policyClient.getUserPolicyById(any())).thenReturn(userPolicy);
+        when(authClient.getUserById(any())).thenReturn(user);
         when(claimMapper.mapToEntity(any())).thenReturn(claim);
         when(claimRepository.save(any(Claim.class))).thenReturn(claim);
         when(claimMapper.mapToResponse(any())).thenReturn(claimResponseDTO);
-        doNothing().when(rabbitTemplate).convertAndSend(eq("claim.exchange"), eq("claim.created"), any(ClaimCreatedEvent.class));
+        
+        // Mocking direct email notification (success)
+        when(notificationClient.sendEmail(any())).thenReturn(org.springframework.http.ResponseEntity.ok("Success"));
 
-        ClaimResponseDTO response = claimService.initateClaim(requestDTO);
+        ClaimResponseDTO response = claimService.initiateClaim(requestDTO);
 
         assertNotNull(response);
         assertEquals(1L, response.getClaimId());

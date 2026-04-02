@@ -35,7 +35,7 @@ public class ClaimController {
 	@PreAuthorize("hasRole('ADMIN') or principal.equals(#requestDTO.userId)")
 	public ResponseEntity<ClaimResponseDTO> initiateClaim(@RequestBody ClaimRequestDTO requestDTO){
 		
-		ClaimResponseDTO response=claimService.initateClaim(requestDTO);
+		ClaimResponseDTO response = claimService.initiateClaim(requestDTO);
 		
 		return ResponseEntity.ok(response);
 	}

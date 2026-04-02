@@ -17,8 +17,9 @@ import com.group2.notification_service.entity.Otp;
 import com.group2.notification_service.exception.OtpException;
 import com.group2.notification_service.repository.OtpRepository;
 
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.*;
 
@@ -112,17 +113,20 @@ public class NotificationServiceImpl implements INotificationService {
     }
 
     public void sendGeneralEmail(String to, String subject, String body) {
-        log.info("Sending status notification via SMTP to: {}, Subject: {}", to, subject);
+        log.info("Sending status notification via SMTP (HTML support) to: {}, Subject: {}", to, subject);
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(body);
-            message.setFrom(senderEmail);
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(body, true); // true indicates HTML
+            helper.setFrom(senderEmail);
+            
             javaMailSender.send(message);
-            log.info("SMTP email sent successfully to: {}", to);
+            log.info("SMTP HTML email sent successfully to: {}", to);
         } catch (Exception e) {
-            log.error("Failed to send SMTP email to {}: {}", to, e.getMessage());
+            log.error("Failed to send SMTP HTML email to {}: {}", to, e.getMessage());
             throw new RuntimeException("SMTP delivery failed", e);
         }
     }

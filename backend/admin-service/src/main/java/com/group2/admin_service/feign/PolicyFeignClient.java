@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import com.group2.admin_service.dto.PolicyDTO;
 import com.group2.admin_service.dto.PolicyRequestDTO;
 import com.group2.admin_service.dto.PolicyStatsDTO;
+import com.group2.admin_service.dto.UserPolicyDTO;
 import com.group2.admin_service.config.FeignConfig;
 
 @FeignClient(name = "policy-service", configuration = FeignConfig.class)
@@ -22,5 +23,8 @@ public interface PolicyFeignClient {
 
 	@DeleteMapping("/api/admin/policies/{id}")
 	void deletePolicy(@PathVariable("id") Long id);
+
+    @GetMapping("/api/user-policies/{id}")
+    UserPolicyDTO getUserPolicyById(@PathVariable("id") Long id);
 }
 
