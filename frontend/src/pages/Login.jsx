@@ -34,11 +34,14 @@ export default function Login() {
       toast.success('Welcome back!');
       navigate(role === 'ADMIN' ? '/admin/dashboard' : '/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.message || err.response?.data || 'Invalid credentials');
+      const errorData = err.response?.data;
+      const errorMsg = typeof errorData === 'string' ? errorData : (errorData?.message || errorData?.error || 'Invalid credentials');
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: 'var(--color-bg)' }}>

@@ -19,7 +19,8 @@ import lombok.Setter;
 public class User extends BaseEntity {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "users_seq")
+	@jakarta.persistence.SequenceGenerator(name = "users_seq", sequenceName = "users_id_seq", allocationSize = 1)
 	private Long id;
 	
 	@Column(nullable = false)

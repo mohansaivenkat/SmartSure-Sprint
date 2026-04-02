@@ -18,6 +18,7 @@ import com.group2.claims_service.entity.Claim;
 import com.group2.claims_service.entity.ClaimDocument;
 import com.group2.claims_service.entity.ClaimStatus;
 import com.group2.claims_service.exception.ClaimNotFoundException;
+import com.group2.claims_service.feign.UserPolicyDTO;
 import com.group2.claims_service.repository.ClaimDocumentRepository;
 import com.group2.claims_service.repository.ClaimRepository;
 import com.group2.claims_service.util.ClaimMapper;
@@ -52,7 +53,7 @@ public class ClaimServiceImpl implements IClaimService {
 	public ClaimResponseDTO initateClaim(ClaimRequestDTO requestDTO) {
         // Strict Policy Verification: Verify status and ownership via policy-service
         try {
-            com.group2.claims_service.feign.UserPolicyDTO policy = policyClient.getUserPolicyById(requestDTO.getPolicyId());
+            UserPolicyDTO policy = policyClient.getUserPolicyById(requestDTO.getPolicyId());
             if (policy == null) {
                 throw new RuntimeException("Invalid Policy ID provided.");
             }
