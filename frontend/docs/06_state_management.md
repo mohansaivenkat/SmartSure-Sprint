@@ -1,20 +1,27 @@
-# Global & Local State Management Strategy
+# Global & Local State Management Technical Architecture
 
-## Redux Toolkit for Global State
-SmartSure leverages Redux Toolkit as its primary global state management solution. This choice provides a robust, predictable, and traceable mechanism for managing data that must be shared across disparate parts of the application.
+## 1. Redux Store Implementation
+The global context resolves complex domain logic through `@reduxjs/toolkit`. The architecture prevents prop drilling while maximizing performance through targeted selector mappings.
 
-### Key Global Slices
-- Auth Slice: Manages the authentication state, the currently logged-in user profile, and user role. This is the source of truth for the entire application's authentication status.
-- Theme Slice: Responsibly handles the light/dark mode preference, enabling a consistent visual experience as users browse different features.
+### Redux Architecture Flow
+```mermaid
+graph LR;
+    A[React View: Profile.tsx] -->|Dispatches Action| B[Redux Slice: updateProfile Context]
+    B -->|Async Thunk Trigger| C[API Layer: axios.ts]
+    C -->|Returns 200| B
+    B -->|Mutates state.user| D[Redux Store Index]
+    D -->|useAppSelector rerenders| A
+```
 
-## Local State Management
-For logic confined to a single component—such as form inputs, local toggle switches, or modal visibility—the application utilizes standard React hooks like `useState` and `useReducer`. This clear separation between local and global state prevents the global store from becoming bloated with ephemeral data, thus optimizing performance and readability.
+## 2. Slice Map Contracts
 
-## Asynchronous Operations & Thunks
-Redux Thunks are used for handling complex asynchronous operations that need to interact with the global store. This pattern allows for a clear, three-stage lifecycle for every API request:
-1. Pending: Trigger loading states in the UI.
-2. Fulfilled: Update the global state with successful response data.
-3. Rejected: Capture errors and update the state to show appropriate failure messages.
+| Slice Name | Primary Purpose | State Shape Interface | Selectors Provided |
+|------------|-----------------|-----------------------|--------------------|
+| `authSlice` | JWT / Session tracking | `{ user: UserPayload, token: String }` | `selectCurrentUser`, `selectIsAuth` |
+| `themeSlice`| UI Dark/Light Config | `{ mode: 'dark' \| 'light' }` | `selectCurrentTheme` |
 
-## Performance Considerations
-To avoid unnecessary re-renders, the application makes use of memoized selectors (where needed) and ensures that components only subscribe to the specific parts of the state they require. This granular subscription strategy is critical for maintaining high performance as the application grows in complexity.
+## 3. Local State Constraints
+* **`useState` Rule:** Used exclusively for ephemeral UI mutations (e.g., `<Modal isOpen={true} />`, `<input onChange={e => setText(e.target.value)} />`).
+* **`useReducer` Rule:** Triggered locally for complex local state trees where multi-variable changes occur in parallel, bypassing the need for a global Redux namespace constraint.
+
+Redux slices strictly define typed outputs reducing runtime crashes stemming from `undefined` payload states common in standard component props polling.

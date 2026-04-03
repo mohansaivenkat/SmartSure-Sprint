@@ -1,24 +1,28 @@
-# Performance Optimization Strategies
+# Performance Optimization Technical Spec
 
-## Build-Time Optimization
-SmartSure leverages Vite for its build process, taking advantage of features like native ES modules and Rollup-based bundling. This ensures that the application starts quickly during development and produces highly optimized, minified bundles for production.
+## 1. Vite Build-Cycle Optimization
+The V9 Application transitions completely away from Webpack dependency graphs, driving performance aggressively upwards via Native ES Module loading inside Vite on Port `3000`.
 
-### Key Build Techniques
-- Code Splitting: By using dynamic imports (and React.lazy where necessary), we ensure that users only download the code they need for the current route.
-- Minification: All JavaScript and CSS are minified to reduce payload sizes.
-- Asset Optimization: Images and icons are optimized for web delivery using modern formats.
+### Core Bundle Compilation
 
-## Runtime Efficiency
-To ensure a smooth user experience, the application implements several runtime performance measures:
-- Avoid Unnecessary Re-renders: We utilize React's `memo`, `useMemo`, and `useCallback` hooks in performance-critical areas to prevent redundant component updates.
-- Efficient State Updates: Redux Toolkit provides a centralized and optimized way to update global state without impacting unrelated components.
-- Virtualized Lists: For data-heavy views (like long policy lists or claim histories), we consider using virtualization techniques to only render the visible portions of the list.
+| Metric Type | Measurement Component | Configuration Parameter |
+|-------------|-----------------------|-------------------------|
+| Compilation Engine| `esbuild` | Core default - Native Go compilation bindings |
+| Final Rollup Target | `dist/` | Tree-shaken production Javascript chunk bundles |
+| Memory Limits | Node execution env | Standard V8 max_old_space metrics apply |
 
-## Efficient API Communication
-Performance is also optimized at the network layer:
-- Request Deduplication: Ensuring that multiple simultaneous requests for the same resource are avoided.
-- Caching: Utilizing browser-level caching or Redux-based caching for data that doesn't change frequently.
-- Throttling & Debouncing: Implementing debouncing on search inputs to minimize unnecessary API calls as the user types.
+## 2. React Runtime Network Efficiency
+Network request mapping explicitly suppresses multiple overlapping payload requests occurring from component mount lifecycles.
 
-## Continuous Performance Monitoring
-We prioritize clear metrics such as First Contentful Paint (FCP) and Time to Interactive (TTI) to ensure the application feels snappy and responsive to user input.
+```mermaid
+flowchart TD
+    A[Component Mount] --> B{Data Present in Redux?}
+    B -->|Yes| C[Render from Memory: 0ms API Cost]
+    B -->|No| D[Fire Axios Request: Gateway 8888]
+    D --> E[Gateway resolves payload]
+    E --> F[Inject into Application Redux Node]
+    F --> C
+```
+
+## 3. DOM Paint Operations
+Heavy SVGs rendering multi-layer graphic elements, especially the donut charts (`<ChartDonut />` in UI.tsx), bypass heavy canvas rendering loads by utilizing lightweight SVG stroke offsets executed entirely via CSS transition calculations instead of constant JavaScript polling algorithms.

@@ -1,19 +1,47 @@
-# Overview of SmartSure Frontend
+# SmartSure Frontend Technical Specification: Overview & Architecture
 
-## Introduction
-SmartSure is a comprehensive insurance management platform designed with a modern user experience and robust microservices-based backend integration. The frontend is built using React.js 18 with TypeScript to ensure high type safety and maintainable code patterns. It prioritizes a premium aesthetic, seamless navigation, and real-world functional completeness for both insurance customers and administrative users.
+## 1. System Overview
+SmartSure Insurance Management System is a full-stack distributed platform. The frontend operates as a React 18 / TypeScript Single Page Application (SPA), interfacing with a Spring Boot Microservices ecosystem via an API Gateway.
 
-## Core Objectives
-The primary objective of the frontend implementation is to provide a central hub for policy management, claim processing, and profile security. Each feature is designed to be self-sufficient yet integrated into a larger ecosystem. The application utilizes Vite as its build tool for rapid development cycles and optimized production bundles.
+### Core Metrics & Specifications
+* **Frontend Port:** `3000` (Vite dev server)
+* **API Gateway Port:** `8888`
+* **Eureka Discovery Port:** `8761`
+* **Config Server Port:** `9999`
+* **Axios Timeout Threshold:** `30000ms`
+* **Authentication:** JWT Bearer (Access Expiry: 15min, Refresh Expiry: 7 days)
 
-## Technical Foundation
-The stack comprises several key technologies and patterns:
-- React 18: Leveraging the latest features like functional components and hooks.
-- TypeScript: Providing strict typing across the entire domain, from API responses to UI component props.
-- Redux Toolkit: Serving as the centralized source of truth for authentication and global application state.
-- Tailwind CSS: Utilizing utility-first styling for consistency and speed.
-- Framer Motion: Crafting high-fidelity animations that improve the perceived quality of the interface.
-- Axios: Managing complex HTTP communication with the microservices layer through a dedicated service abstraction.
+## 2. Frontend-to-Backend Connection Lifecycle
+The entire request-response lifecycle between the React client and the backend follows a strict Gateway-mediated path:
 
-## Intended Audience
-This documentation serves as a blueprint for the frontend's architecture, design decisions, and implementation details. It is intended for developers, architects, and quality assurance engineers to understand the standards followed in this project.
+```mermaid
+sequenceDiagram
+    participant U as User / Component
+    participant S as Redux Store / Axios
+    participant G as API Gateway (Port 8888)
+    participant M as Microservice (Auth/Policy)
+    participant DB as PostgreSQL (Port 5432)
+
+    U->>S: Dispatch Action / Trigger API
+    Note over S: Axios attach JWT token
+    S->>G: HTTP Request (e.g., POST /auth-service/api/auth/login)
+    G->>G: AddRequestHeader=X-Gateway-Secret
+    Note over G: Gateway routes via Eureka
+    G->>M: Forwarded Request
+    M->>DB: Query Database
+    DB-->>M: Entity Record
+    M-->>G: HTTP 200 OK + JSON Payload
+    G-->>S: Propagate Response
+    S-->>U: Update React Local State / UI
+```
+
+## 3. High-Level Technology Data Table
+
+| Layer | Technology | Primary Configuration Payload / Limits |
+-------------|------------|-----------------------------------|
+| Build | Vite | Alias `@` mapped to `./src`, Port `3000`, `host: true` |
+| Client | React 18 | StrictMode enabled, Functional Component methodology |
+| State | Redux Toolkit | `selectCurrentUser` abstraction, thunk-based asynchronous flow |
+| Networking | Axios | `BASE_URL=http://localhost:8888`, timeout `30000ms`, `Bearer` intercepted |
+| Gateway | Spring Cloud | `springdoc.swagger-ui.urls` mapped for openapi, JWT validation |
+| Persistence| PostgreSQL | `localhost:5432/smartsure_auth`, Hibernate DDL auto `update` |

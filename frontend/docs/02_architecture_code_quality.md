@@ -1,29 +1,38 @@
-# Architecture & Code Quality Standards
+# Architecture & Code Quality Specification
 
-## Feature-Based Folder Structure
-The application follows a strictly modular, feature-based directory structure. This approach encapsulates all logic related to a specific domain (e.g., authentication, policies, claims) within its own subdirectory. By doing so, the project ensures that files related by function stay close together, reducing the mental overhead for developers and simplifying the scaling process.
+## 1. Feature-First Hexagonal Architecture
+The application codebase aligns with a strict feature-driven design, decoupling global shared infrastructure (`src/core`, `src/shared`) from domain-specific context (`src/features/*`).
 
-### Directory Mapping
-- src/features: Contains the core business domains. Each sub-folder (e.g., /claims) includes its own components, store logic (slices), and specific hooks.
-- src/core: Houses cross-cutting concerns like API configurations, global error handling, and route guards.
-- src/shared: Stores truly reusable UI components, utility functions, and custom hooks that are consumed by multiple features.
-- src/layouts: Manages the structural shell of the application, such as navigation bars and footers.
+### Directory Data Flow Visualization
 
-## Clean Code & Modular Design
-Code quality is maintained through strict adherence to SOLID principles and the DRY (Don't Repeat Yourself) methodology. Components are kept small and focused, with complex logic extracted into custom hooks or utility functions. This modularity makes unit testing more straightforward and enhances the legibility of the UI layer.
+```mermaid
+graph TD;
+    A[src/features] --> B[Domain Logic: Claims, Policies, Auth]
+    C[src/core/services] -->|Provides API abstraction| A
+    C --> D[api.ts - Axios Instance]
+    A --> E[Redux Store Slices]
+    F[src/shared/components] -->|Imported by| A
+    E --> G[Global Store Index]
+```
 
-## Meaningful Naming Conventions
-Variable, component, and file naming follow standard React community guidelines:
-- Components use PascalCase (e.g., PolicyCard.tsx).
-- Hooks start with the prefix 'use' and use camelCase (e.g., usePolicyData.ts).
-- Constant values use UPPER_SNAKE_CASE (e.g., API_TIMEOUT).
-- Slices and services use descriptive suffixes to indicate their role (e.g., authSlice.ts, api.ts).
+## 2. API Contract & Endpoint Mapping Architecture
+All network paths pass through `api.ts`, which segregates requests. Below is the mapping for core architectural modules.
 
-## Separation of Concerns
-The implementation ensures a clear distinction between:
-- Data fetching logic (handled in the API service layer).
-- State management (handled in Redux slices).
-- UI representation (handled in React components).
-- Business logic (delegated to custom hooks or helpers).
+### Component to Backend API Contract
 
-This separation prevents the creation of "God components" and makes the codebase highly maintainable throughout its lifecycle.
+| Domain Component | Method | Gateway Endpoint | Request Payload Example | Expected Response |
+|------------------|--------|------------------|-------------------------|-------------------|
+| `Login.tsx` | POST | `/auth-service/api/auth/login` | `{email, password}` | `200 OK`, `{token, refreshToken}` |
+| `MyPolicies.tsx` | GET | `/policy-service/api/policies/user/{id}` | `userId` param | `200 OK`, `Array<Policy>` |
+| `MyClaims.tsx` | POST | `/claims-service/api/claims/initiate` | `FormData` (claim, files) | `201 Created` |
+
+## 3. Component Props Architectural Standard
+Standardized interfaces govern component usage across the app.
+
+| Component Name | Prop Interface | Description | Default |
+|----------------|----------------|-------------|---------|
+| `PageHeader` | `{ title: string, subtitle?: string, action?: ReactNode }` | Renders top layout | N/A |
+| `Card` | `{ children: ReactNode, hoverable?: boolean }` | Data container | false |
+| `StatCard` | `{ label: string, value: string, color: string }` | Displays metrics | N/A |
+
+All components leverage strict generic inputs enforcing compile-time safety across development pipelines.

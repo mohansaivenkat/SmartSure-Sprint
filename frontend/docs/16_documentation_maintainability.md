@@ -1,21 +1,25 @@
-# Documentation & Maintainability Standards
+# Documentation & Maintainability Configuration
 
-## High Standards for Readability
-SmartSure is documentation-first. We believe that clean, self-documenting code is the foundation of any long-lived software project. Our source files are structured logically, with a clear separation of imports (from third-party to local), types, utilities, and main component logic.
+## 1. Context Encapsulation Specifications
+Codebase readability inherently relies upon predictable tree definitions mapping logic boundaries. The React Single Page Application (SPA) adheres to a self-contained domain structure protecting against unintended DOM cross-contamination.
 
-### Documentation Points
-- Code Comments: Strategic comments are used for non-obvious logic, complex business rules, and technical workarounds to provide context for future maintainers.
-- README Files: Each major module (frontend/backend) maintains its own descriptive README file covering setup, dependencies, and architecture.
-- Modular Documentation: This dedicated `docs` folder provides a comprehensive overview of every architectural and implementation decision.
+### Source Control Directory Maps
 
-## Maintainability through Design
-The frontend architecture ensures that it is easy to understand and modify:
-- Atomic Patterns: Changes to a base UI component (like `Button.tsx`) propagate automatically, minimizing the surface area for updates.
-- Feature Encapsulation: Each feature operates within its own directory, reducing the risk that a change in the 'claims' module will break the 'policies' module.
-- Strict Type Safety: TypeScript's strict mode is enabled to catch errors at compile-time rather than runtime, significantly lowering the maintenance burden.
+| Root Architecture Node | Compile Responsibility | Maintainability Concept |
+|------------------------|------------------------|-------------------------|
+| `src/core/` | Global Axio/Guard Executing | Prevents API logic polluting module-level logic. |
+| `src/features/` | Scoped Module Implementation | Isolates `claim` variables completely apart from `policy`. |
+| `src/shared/` | Cross-Boundary Elements | Atomic UI updates apply globally. |
+| `docs/` | Static Metadata Reference | Maps implementation specs aligning to Git standards. |
 
-## Long-term Project Goals
-To ensure ease of onboarding for new developers, we prioritize:
-- Consistent Code Style: Enforced through Prettier and ESLint (where applicable).
-- Standardized File Tree: Making it obvious where any given piece of logic should reside.
-- Documented API Contracts: Keeping our frontend interfaces in sync with the backend services for a predictable development experience.
+## 2. API Contract Sync Standard
+To maintain feature harmony alongside backend Microservice lifecycles passing `Eureka` registration logic, all mapped routes MUST exist concurrently inside Gateway Swagger arrays.
+
+```mermaid
+graph LR;
+    A[Backend Service Registers Eureka/8761] --> B[API Gateway Updates/8888]
+    B --> C[Swagger Configured /v3/api-docs]
+    C --> D[Frontend React Developers Map Contract]
+    D --> E[api.ts Updated & Verified]
+```
+By enforcing Gateway-only routing mapping via `VITE_API_BASE_URL` (`http://localhost:8888`), local React instances drop dependency checks against randomized downstream Spring component ports.

@@ -1,24 +1,36 @@
-# API Integration & Data Handling
+# API Integration & Data Handling Specification
 
-## Centralized Service Layer
-SmartSure utilizes a centralized API service located in src/core/services/api.ts. This approach abstracts the underlying HTTP implementation (Axios) from the feature components. By exposing a set of clean, typed methods (e.g., policyAPI.getUserPolicies), we ensure that any changes to endpoint structures or headers only need to be updated in a single file.
+## 1. Axios Orchestration Flow
+`src/core/services/api.ts` constructs the absolute backbone of the frontend logic. A standard timeout of `30000ms` bounds all requests to `http://localhost:8888`.
 
-## Axios Configuration & Interceptors
-The application configures a primary Axios instance with the following settings:
-- Base URL: Dynamically derived from environment variables, ensuring flexibility between development and production.
-- Timeout Settings: Configured to handle potential microservice delays gracefully.
+```mermaid
+stateDiagram-v2
+    [*] --> RequestInitiated
+    RequestInitiated --> Interceptor
+    Interceptor --> AttachJWT : if localStorage.getItem('token') !== null
+    AttachJWT --> Dispatch
+    Dispatch --> BackendGateway
+    BackendGateway --> Response
+    Response --> 200_OK : Success
+    Response --> 401_Unauthorized : Token Expired
+    401_Unauthorized --> RefreshQueue : isRefreshing === true
+    401_Unauthorized --> RefreshAPI : isRefreshing === false
+    RefreshAPI --> StorageUpdate : New Tokens (Access + Refresh)
+    StorageUpdate --> RetryOriginalRequest
+    RefreshAPI --> ForceLogout : Refresh Fails
+```
 
-### Authentication Interceptors
-A request interceptor is implemented to automatically attach JWT bearer tokens to all outgoing requests aimed at protected resources. This removes the need for individual components to manage token headers manually.
+## 2. Axios Implementation Metrics & Setup
+The API service distinguishes between specific authentication needs through multiple Axios instances:
 
-### Response Interceptors & Token Refresh
-A sophisticated response interceptor manages the lifecycle of authentication tokens. It intercepts 401 Unauthorized errors and attempts to silently refresh the access token using a refresh token strategy. If a refresh fails, the interceptor triggers a global logout flow, redirecting the user to the login page to maintain security.
+| Axios Instance | Target Base URL | Authorization Header Context | Timeout Execution |
+|---|---|---|---|
+| `API` | `http://localhost:8888` | `Bearer <ACCESS_TOKEN>` | `30000ms` |
+| `AUTH_FREE_API` | `http://localhost:8888` | None | None |
+| `INTERNAL_AUTH` | `http://localhost:8888` | Used via token query param logic | None |
 
-## State Management for Async Operations
-Fetching data involves managing three distinct states:
-1. Loading: Indicated by a loading spinner component during the request lifecycle.
-2. Success: The application updates local or global state with the received payload.
-3. Error: Catch blocks capture and propagate error messages to the UI for user feedback.
-
-## Data Normalization
-Received data is often processed or mapped to match the frontend models. Using TypeScript interfaces for API responses ensures that the data being used in components is predictable and type-safe, preventing runtime undefined errors.
+## 3. Form Data and File Payload Handling
+For `claimsAPI.uploadDocument`:
+- Max Upload Buffer relies on standard Spring Server limits.
+- Requires explicit `String(claimId)` casting logic implemented directly in the frontend since `FormData` demands primitive string payloads.
+- Payload headers are overridden via `headers: { 'Content-Type': 'multipart/form-data' }`.

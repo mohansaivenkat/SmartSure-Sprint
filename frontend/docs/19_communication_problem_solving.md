@@ -1,19 +1,32 @@
-# Communication & Structured Problem-Solving
+# Development Synchronization & Problem Solving
 
-## Approach to Complex Tasks
-SmartSure's development process follows a highly structured thinking model. When faced with complex challenges—such as integrating multi-stage payment flows or architecting a global error handling system—we follow a disciplined approach:
-1. Analysis: Breaking down the problem into its core components and potential failure points.
-2. Design: Drafting a solution that is both efficient and maintainable.
-3. Execution: Implementing the design with a focus on code quality and best practices.
-4. Verification: Thorough testing and debugging to ensure the solution meets all requirements.
+## 1. Cross-Discipline Defect Resolution Pipeline
+Structured resolution formats define development communication processes mapping error events internally via the network layer directly down toward component outputs.
 
-## Problem-Solving During Debugging
-Structured thinking is most evident during the debugging process. Instead of "guess-and-check" fixes, we apply systematic root cause analysis to identify the fundamental issue. This proactive approach not only resolves the current bug but also prevents similar issues from occurring elsewhere in the future.
+### Issue Triangulation Metrics
 
-## Clear Approach & Logic
-All feature implementations are preceded by a clear articulation of the approach:
-- For API Integration: Outlining the service abstraction and hook orchestration.
-- For Auth: Defining the lifecycle of tokens and the role-based route guard logic.
-- For UI/UX: Specifying the design tokens, animations, and responsive breakpoints.
+| Metric Node | Inspector Source Location | Execution Output Status |
+|-------------|----------------------------|-------------------------|
+| Node Compile Issue | Vite Terminal | Pre-compilation `.tsx` typescript constraint crashes. |
+| DOM Event Anomaly | React DevTools Context | Prop-state manipulation mismatch identification. |
+| Database Failure | Gateway HTTP Return | 500 Network payload inspection via Chrome DevTools. |
 
-This transparent communication ensures that the dev team and stakeholders are always in sync regarding the technical direction and logical flow of the application.
+## 2. Resolution Action Map
+When debugging backend communication drops (e.g., config-server on Port 9999 misconfigured mapping Eureka Discovery):
+
+```mermaid
+sequenceDiagram
+    participant FE as Frontend DOM
+    participant DEV as Network Monitor
+    participant GW as Gateway Router
+    participant LOG as Service Logs
+
+    FE->>GW: Attempt Fetch
+    GW-->>FE: HTTP 503 Unavailable
+    Note over FE, DEV: Developer Isolates Status Code
+    DEV->>GW: Identifies CORS/Routing Exception
+    GW->>LOG: Tracks Eureka Mapping Loss
+    Note over LOG: Action: Rebuild Target Endpoint Registration
+```
+
+This transparency protocol blocks "shotgun debugging" by targeting explicit node execution layer failures systematically preventing downstream collateral system disruptions.

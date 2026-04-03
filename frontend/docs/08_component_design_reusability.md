@@ -1,22 +1,32 @@
-# Component Design & Reusability Framework
+# Component Design & Reusability Contracts
 
-## Design System Philosophy
-SmartSure implements a highly modular and reusable component architecture centered in the `src/shared/components` directory. This library of UI primitives follows an atomic design philosophy, ensuring consistency across every page of the application.
+## 1. Master Primitives & Atomic Design Strategy
+`src/shared/components/UI.tsx` maps a specialized atomic component tree ensuring DOM efficiency. Generic React elements are abstracted away utilizing TypeScript interfaces guaranteeing compiler-level verification.
 
-### Examples of Reusable Primitives
-- Button: A highly configurable button component supporting multiple variants (primary, danger, outline), sizes, and loading states.
-- Card: A foundational layout element providing consistent spacing, padding, and subtle shadow definition for content grouping.
-- Input/Select/Textarea: Standardized form elements with integrated label support and error state handling.
-- LoadingSpinner & ErrorMessage: Standardized feedback components that ensure consistent UX during asynchronous operations.
+### UI Master Component Registry
 
-## Custom Hooks for Shared Logic
-Beyond UI components, reusable logic is extracted into custom hooks within `src/shared/hooks`. These hooks manage cross-cutting concerns like:
-- useAppSelector/useAppDispatch: Typed versions of Redux hooks for better DX and type safety.
-- Form Logic: Handlers for validation and state synchronization.
-- Media Queries: Logic to reactively detect screen size changes for advanced responsive behavior.
+| Component Signature | Inherited Props / Required Data | UX Target Utilization |
+|---------------------|---------------------------------|-----------------------|
+| `Button.tsx` | `variant: 'primary' \| 'danger', loading: boolean` | Resolves scaling buttons handling network queue status. |
+| `Modal.tsx` | `isOpen: boolean, onClose: function, size: 'sm'\|'lg'` | Top-level z-index interceptor with opacity-background processing. |
+| `StatCard.tsx` | `icon: IconType, value: string, color: hex` | Analytical metric injection primarily inside `Dashboard.tsx`. |
 
-## DRY Principles & Maintainability
-By strictly adhering to the "Don't Repeat Yourself" (DRY) principle, we minimize bugs and reduce the code volume. Improvements or bug fixes made to a shared component (e.g., updating a button shadow or a border radius) automatically propagate to every feature in the application, ensuring a cohesive look and feel.
+## 2. Reusability Data Processing Logic
+When integrating forms across differing modules (`Register.tsx` vs `InitiateClaim.tsx`), the overarching visual fields execute from `<Input />` scaling Tailwind CSS variants automatically. 
 
-## Component Documentation & Usage
-Documentation for individual components is maintained through clear prop-type definitions (via TypeScript interfaces) and self-documenting code. This makes it easy for new developers to understand how to leverage existing UI patterns when building new features.
+```mermaid
+classDiagram
+    class GenericInput {
+      +string label
+      +string error
+      +onTextChange()
+    }
+    class ClaimForm {
+      <<Uses>> GenericInput
+    }
+    class RegistrationForm {
+      <<Uses>> GenericInput
+    }
+```
+
+Components avoid defining local overriding `style` tags and default explicitly to global CSS variables (e.g., `--color-surface` and `--color-text`) defined within `index.css`.

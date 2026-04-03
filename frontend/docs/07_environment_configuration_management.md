@@ -1,19 +1,29 @@
-# Environment & Configuration Management
+# Environment & Configuration Technical Blueprint
 
-## Environment Variable Architecture
-SmartSure utilizes a strict configuration management strategy by separating application logic from environment-specific data. This is achieved through the use of `.env` files and Vite's built-in environment variable support.
+## 1. Vite Environment Architecture
+Environment mapping decouples sensitive API gateways constraints. All `.env` executions use Vite's standard runtime injection protocols via `import.meta.env`.
 
-### Key Variables
-- VITE_API_BASE_URL: The primary endpoint for all microservices communication. This allows dev and prod to point to different gateway services seamlessly.
-- VITE_RAZORPAY_KEY: Configurable payment keys, ensuring that sensitive integration credentials are never hardcoded in the source.
+### Core Application Variables Contract
 
-## Management Across Environments
-The project is designed to handle multiple environment configurations:
-- Development (.env.development): Points to local or staging services for rapid testing.
-- Production (.env.production): Configured with optimized, secure, and production-ready endpoints.
+| Key Name | Description | Default Development Value | Target Pipeline Concept |
+|----------|-------------|----------------------------|-------------------------|
+| `VITE_API_BASE_URL` | Microservices Gateway Route | `http://localhost:8888` | Maps to AWS/Azure Gateway |
+| `VITE_RAZORPAY_KEY` | Transaction Identity Logic | `rzp_test_SUGz2hbfTwDAHc` | Prod Razorpay Vault ID |
 
-## Avoiding Sensitive Hardcoding
-A core security principle adhered to is the absolute avoidance of hardcoding sensitive information like API keys, secrets, or internal server paths. This not only improves security but also makes the application incredibly portable across different infrastructure providers and deployment pipelines.
+## 2. Config Security Boundary
+The frontend boundary strictly adheres to non-exposure constants.
+The centralized `config-server` (running on `9999`) injects backend shared variables via `application.properties` including:
+* PostgreSQL configuration port (`5432`)
+* Microservice monitoring rules (Zipkin tracing `9411`)
+* Razorpay backend verification secrets (`WtpgwgV4t3I2wTBJ22WWlDbE`). Note: Frontend ONLY requires the public `VITE_RAZORPAY_KEY`. Secret components remain strictly behind `gateway/9999` constraints.
 
-## Type Safety for Config
-By using Vite's `import.meta.env`, we provide a central point of access for all configuration. This information is typed via `vite-env.d.ts` to ensure that developers receive IDE autocompletion and that the build process will fail if a critical environment variable is missing or incorrectly named.
+### Execution Target Flow
+```mermaid
+graph TD;
+    A[Vite Build Process Run] --> B{Env Evaluator}
+    B -->|.env.development| C[Inject localhost mappings]
+    B -->|.env.production| D[Inject CDN / Cloud Mappings]
+    C --> E[vite-env.d.ts verifies Types]
+    D --> E
+    E --> F[React Component Bundle Complete]
+```
