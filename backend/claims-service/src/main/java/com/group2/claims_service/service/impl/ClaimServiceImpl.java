@@ -267,9 +267,15 @@ public class ClaimServiceImpl implements IClaimService {
                                 (remark != null ? "Admin Remark: " + remark + "\n\n" : "") +
                                 "You can view the full details on your dashboard.\n\nBest regards,\nSmartSure Management Team";
                     
-                    com.group2.claims_service.dto.NotificationEvent evt = new com.group2.claims_service.dto.NotificationEvent(user.getEmail(), subject, body);
-                    rabbitTemplate.convertAndSend("notification.exchange", "notification.email", evt);
-                    log.info("Published notification event for claimId: {} to RabbitMQ", claimId);
+                    try {
+                        notificationClient.sendEmail(new EmailRequest(user.getEmail(), subject, body));
+                        log.info("📧 Claim status notification sent via Feign for claimId: {}", claimId);
+                    } catch (Exception feignEx) {
+                        log.warn("⚠️ Claim status notification via Feign failed, falling back to RabbitMQ: {}", feignEx.getMessage());
+                        com.group2.claims_service.dto.NotificationEvent evt = new com.group2.claims_service.dto.NotificationEvent(user.getEmail(), subject, body);
+                        rabbitTemplate.convertAndSend("notification.exchange", "notification.email", evt);
+                        log.info("Published notification event for claimId: {} to RabbitMQ", claimId);
+                    }
                 }
             } catch(Exception e) {
                 log.error("Failed to send notification for claimId {}: {}", claimId, e.getMessage());

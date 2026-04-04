@@ -3,6 +3,7 @@
     <!-- App Name -->
     <springProperty scope="context" name="appName" source="spring.application.name"/>
     <springProperty scope="context" name="logstashHost" source="logstash.host" defaultValue="localhost"/>
+    <springProperty scope="context" name="logstashPort" source="logstash.port" defaultValue="5044"/>
 
     <!-- CONSOLE -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -29,7 +30,7 @@
 
     <!-- LOGSTASH (Direct ELK integration) -->
     <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <destination>${logstashHost}:5044</destination>
+        <destination>${logstashHost}:${logstashPort}</destination>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <customFields>{"app_name":"${appName}"}</customFields>
         </encoder>

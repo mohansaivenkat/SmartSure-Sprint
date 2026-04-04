@@ -155,7 +155,6 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
         userPolicy.setStatus(PolicyStatus.PENDING_CANCELLATION);
         userPolicyRepository.save(userPolicy);
 
-        // Send Cancellation Request Email
         try {
             UserDTO user = authClient.getUserById(currentUserId);
             String subject = "SmartSure: Cancellation Request Received";
@@ -176,10 +175,16 @@ public class PolicyCommandServiceImpl implements IPolicyCommandService {
                 "</div></div></body></html>",
                 user.getName(), userPolicy.getPolicy().getPolicyName()
             );
-            notificationClient.sendEmail(new EmailRequest(user.getEmail(), subject, htmlBody));
-            log.info("📧 Cancellation request notification sent via Feign to: {}", user.getEmail());
+            try {
+                notificationClient.sendEmail(new EmailRequest(user.getEmail(), subject, htmlBody));
+                log.info("📧 Cancellation request notification sent via Feign to: {}", user.getEmail());
+            } catch (Exception feignEx) {
+                log.warn("⚠️ Cancellation request email failed (Feign), falling back to RabbitMQ: {}", feignEx.getMessage());
+                NotificationEvent event = new NotificationEvent(user.getEmail(), subject, htmlBody);
+                rabbitTemplate.convertAndSend("notification.exchange", "notification.email", event);
+            }
         } catch (Exception e) {
-            log.warn("⚠️ Cancellation request email failed (Feign): {}", e.getMessage());
+            log.error("Failed to process cancellation request notification: {}", e.getMessage());
         }
 
         // Saga Trigger (RabbitMQ - Optional for STS users)

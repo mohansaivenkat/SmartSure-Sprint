@@ -189,10 +189,18 @@ body {
     display: block;
   }
 
-  /* Prevent Chatbase widget from obstructing the mobile navbar */
-  #chatbase-bubble-button,
-  #chatbase-bubble-window,
-  iframe[src*="chatbase.co"] {
+  /* Prevent Chatbase widget from obstructing the mobile navbar or being cut off at the top */
+  #chatbase-bubble-button {
     bottom: 85px !important;
+  }
+
+  #chatbase-bubble-window {
+    bottom: 85px !important;
+    top: 20px !important; /* Ensure there is always a gap at the top */
+    height: auto !important;
+    max-height: calc(100svh - 110px) !important; /* Use svh for better mobile support, leaving space for bottom navbar and top margin */
+    width: 90% !important;
+    left: 5% !important;
+    right: 5% !important;
   }
 }

@@ -9,9 +9,26 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [step, setStep] = useState(1); // 1: Email, 2: OTP & New Password
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const validatePassword = (password) => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[@$!%*?&]/.test(password);
+
+    if (password.length < minLength) return "Password must be at least 8 characters long";
+    if (!hasUpperCase) return "Password must contain at least one uppercase letter";
+    if (!hasLowerCase) return "Password must contain at least one lowercase letter";
+    if (!hasNumber) return "Password must contain at least one number";
+    if (!hasSpecialChar) return "Password must contain at least one special character (@$!%*?&)";
+    
+    return null;
+  };
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -31,8 +48,14 @@ export default function ForgotPassword() {
 
   const handleVerifyAndReset = async (e) => {
     e.preventDefault();
-    if (!otp || !newPassword) return toast.error('Please fill in all fields');
-    if (newPassword.length < 6) return toast.error('Password must be at least 6 characters');
+    if (!otp || !newPassword || !confirmPassword) return toast.error('Please fill in all fields');
+    
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) return toast.error(passwordError);
+
+    if (newPassword !== confirmPassword) {
+      return toast.error('Passwords do not match');
+    }
     
     setLoading(true);
     try {
@@ -126,7 +149,24 @@ export default function ForgotPassword() {
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2"
                     style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' }}
-                    placeholder="••••••••"
+                    placeholder="Enter new password"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Confirm New Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <HiLockClosed className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
+                  </div>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2"
+                    style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' }}
+                    placeholder="Confirm new password"
                   />
                 </div>
               </div>
