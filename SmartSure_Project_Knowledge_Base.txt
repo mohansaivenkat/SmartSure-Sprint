@@ -1,0 +1,94 @@
+# SmartSure Insurance Management System — COMPREHENSIVE KNOWLEDGE BASE
+# This file is designed for training and providing context to AI Chatbots.
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+SmartSure is a microservices-based insurance management platform built with Spring Boot and Spring Cloud. 
+It supports customer registration, policy management, claims processing, and admin reporting.
+All communication is secured via JWT authentication and routed through a centralized API Gateway.
+
+================================================================================
+2. HIGH-LEVEL ARCHITECTURE (HLD)
+================================================================================
+Components & Ports:
+- API Gateway (8888): Central entry point, JWT validation, and routing.
+- Eureka Server (8761): Service discovery and registration.
+- Config Server (9999): Centralized configuration management (Native profile).
+- Auth Service (8002): User registration, login, JWT generation.
+- Admin Service (8001): Policy management, claim reviews, and reporting orchestrator.
+- Policy Service (8004): Policy catalog, purchasing, and stats.
+- Claims Service (8003): Claim initiation, document upload, and lifecycle management.
+- Payment Service (8085): Razorpay integration for policy payments.
+- Notification Service (8006): RabbitMQ-based asynchronous email/SMS notifications.
+
+Security Layers:
+- Layer 1 (Gateway): JwtAuthenticationFilter validates JWT and injects X-User-Role/Id headers.
+- Layer 2 (Network): GatewaySecurityFilter blocks direct access to microservices using X-Gateway-Secret.
+- Layer 3 (Application): @PreAuthorize annotations provide fine-grained access control.
+
+================================================================================
+3. DATABASE DESIGN
+================================================================================
+SmartSure uses PostgreSQL as the primary database. Data ownership is distributed:
+- USERS Table (Auth): id, name, email, password (BCrypt), phone, address, role (CUSTOMER|ADMIN).
+- POLICY_TYPES Table (Policy): id, category (HEALTH|VEHICLE|LIFE), description.
+- POLICIES Table (Policy): id, name, description, type_id, premium, coverage, duration, active.
+- USER_POLICIES Table (Policy): id, user_id, policy_id, status (ACTIVE|CANCELLED), start/end dates.
+- CLAIM Table (Claims): id, policy_id, user_id, amount, description, status (SUBMITTED|APPROVED|REJECTED).
+- CLAIM_DOCUMENT Table (Claims): id, claim_id, file_url, document_type.
+
+Cross-Service References:
+Tables store foreign IDs (like user_id) but do not have physical FK constraints across databases. 
+Consistency is maintained via application logic and Feign clients.
+
+================================================================================
+4. API DOCUMENTATION SUMMARY
+================================================================================
+Auth Service:
+- POST /auth-service/api/auth/register : Register new user.
+- POST /auth-service/api/auth/login : Returns JWT token and user info.
+
+Policy Service:
+- GET /policy-service/api/policies : List all available insurance products.
+- POST /policy-service/api/policies/purchase : Buy a policy (Customer only).
+- GET /policy-service/api/admin/policies/stats : Revenue and policy counts (Admin only).
+
+Claims Service:
+- POST /claims-service/api/claims/initiate : Submit a new claim.
+- POST /claims-service/api/claims/upload : Upload medical/damage evidence.
+- GET /claims-service/api/claims/user/{userId} : View claims for a specific user.
+
+Admin Service (Orchestrator):
+- PUT /admin-service/api/admin/claims/{id}/review : Approve or Reject claims.
+- GET /admin-service/api/admin/reports : Unified view of revenue and claim success rates.
+
+================================================================================
+5. MONITORING & OBSERVABILITY (NEW)
+================================================================================
+The project includes a full monitoring stack running in Docker:
+- Prometheus (9090): Scrapes metrics from all microservices via /actuator/prometheus.
+- Grafana (3000): Visualizes JVM, HTTP, and Business metrics (Login: admin/admin).
+- Zipkin (9411): Distributed tracing to track request flows across services.
+
+Microservice Configuration:
+- All services include `micrometer-registry-prometheus`.
+- Actuator endpoints are exposed at `/actuator`.
+- Security is configured to allow `/actuator/**` permitAll() for Prometheus scraping.
+
+================================================================================
+6. RECENT UPDATES & CUSTOMER VALUE
+================================================================================
+SmartSure focuses on earning customer trust through:
+- Transparency: Clear policy descriptions and coverage amounts.
+- Automation: Real-time claim status updates via Notification Service.
+- Reliability: High availability via Eureka and Config Server.
+- Security: Secure payments via Razorpay and state-of-the-art JWT security.
+
+Available Insurance Types:
+1. HEALTH: Critical illness (30+ types), Family plans, Temporary coverage.
+2. VEHICLE: Comprehensive auto, Motorcycle liability, Commercial van coverage.
+3. LIFE: Term Life, Permanent Life, Funeral expense coverage.
+================================================================================
+
+

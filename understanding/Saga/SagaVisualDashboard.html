@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSure Saga Visualizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0c;
+            --surface: #16161a;
+            --primary: #6366f1;
+            --secondary: #a855f7;
+            --accent: #22d3ee;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 5rem;
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--text), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .saga-viz {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            padding: 4rem 0;
+            margin-bottom: 5rem;
+        }
+
+        .saga-viz::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px);
+            z-index: 0;
+        }
+
+        .node {
+            width: 180px;
+            height: 180px;
+            background: var(--surface);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .node:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .node-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .node-label {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text);
+        }
+
+        .node-tag {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+
+        .arrow {
+            position: absolute;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 2px;
+            z-index: 2;
+            width: 0;
+            transition: width 1s ease-in-out;
+        }
+
+        .arrow-1 { top: 50%; left: 24%; width: 15%; }
+        .arrow-2 { top: 50%; left: 52%; width: 15%; }
+
+        /* Animation State */
+        .animating .arrow-1 { width: 18%; }
+        .animating .arrow-2 { width: 18%; }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+
+        .step-card {
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-num {
+            position: absolute;
+            top: -20px;
+            right: -10px;
+            font-size: 6rem;
+            font-weight: 900;
+            color: rgba(255,255,255,0.02);
+            z-index: 0;
+        }
+
+        .step-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 1;
+            position: relative;
+        }
+
+        .step-title span {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        .step-content {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            z-index: 1;
+            position: relative;
+        }
+
+        .code-snippet {
+            background: #000;
+            padding: 1rem;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            margin-top: 1rem;
+            color: var(--accent);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .pulse {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+            top: 50%;
+            transform: translateY(-50%);
+            box-shadow: 0 0 10px var(--accent);
+            animation: movePulse 3s infinite linear;
+            display: none;
+        }
+
+        @keyframes movePulse {
+            0% { left: 24%; opacity: 0; }
+            10% { opacity: 1; }
+            45% { left: 45%; opacity: 1; }
+            50% { left: 45%; opacity: 0; }
+            55% { left: 52%; opacity: 0; }
+            60% { left: 52%; opacity: 1; }
+            90% { left: 70%; opacity: 1; }
+            100% { left: 70%; opacity: 0; }
+        }
+
+        .start-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 100px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0 auto;
+            display: block;
+            transition: all 0.3s;
+        }
+
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+        }
+    </style>
+</head>
+<body class="animating">
+    <div class="container">
+        <header>
+            <div class="subtitle">Distributed Transactions</div>
+            <h1>The Saga Pattern</h1>
+            <p style="color: var(--text-dim);">Choreography-based workflow for SmartSure</p>
+        </header>
+
+        <div class="saga-viz">
+            <div class="node">
+                <div class="node-icon">👤</div>
+                <div class="node-label">User</div>
+                <div class="node-tag">Initiator</div>
+            </div>
+
+            <div class="arrow arrow-1"></div>
+            <div class="pulse" id="pulse" style="display: block;"></div>
+
+            <div class="node">
+                <div class="node-icon">🛡️</div>
+                <div class="node-label">Policy Service</div>
+                <div class="node-tag">State: PENDING</div>
+            </div>
+
+            <div class="arrow arrow-2"></div>
+
+            <div class="node">
+                <div class="node-icon">📬</div>
+                <div class="node-label">Claims Service</div>
+                <div class="node-tag">State: REJECTED</div>
+            </div>
+        </div>
+
+        <button class="start-btn" onclick="document.getElementById('pulse').style.display='block'">Restart Visualization</button>
+
+        <div class="steps-grid" style="margin-top: 4rem;">
+            <div class="step-card">
+                <div class="step-num">01</div>
+                <div class="badge">Initiation</div>
+                <div class="step-title"><span>1</span> Policy Cancellation</div>
+                <div class="step-content">
+                    User requests cancellation. Policy Service updates local status and "shouts" to the system via RabbitMQ.
+                    <div class="code-snippet">
+                        rabbitTemplate.convertAndSend(<br>
+                        &nbsp;&nbsp;EXCHANGE, KEY, event<br>
+                        );
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-num">02</div>
+                <div class="badge">Participation</div>
+                <div class="step-title"><span>2</span> State Sync</div>
+                <div class="step-content">
+                    Claims Service hears the event and automatically sanitizes its own data to prevent fraudulent payouts.
+                    <div class="code-snippet">
+                        @RabbitListener(queues = "...")<br>
+                        handleCancellation(event) {<br>
+                        &nbsp;&nbsp;syncClaims(event.id);<br>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

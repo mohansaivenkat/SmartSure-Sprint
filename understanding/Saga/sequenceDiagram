@@ -1,0 +1,103 @@
+# Saga Pattern in SmartSure Insurance Management System
+
+In a microservices architecture like SmartSure, ensuring data consistency across multiple services is a challenge since each service has its own database. The **Saga Pattern** is the solution for managing these distributed transactions.
+
+## 1. What is the Saga Pattern?
+A Saga is a sequence of local transactions. Each local transaction updates the database and publishes a message or event to trigger the next local transaction in the saga. If a local transaction fails, the saga executes a series of **compensating transactions** to undo the changes made by the preceding local transactions.
+
+In this project, we use the **Choreography-based Saga** approach.
+
+### Choreography-based Saga
+In this approach, there is no central orchestrator. Each service involved in the saga performs its transaction and publishes events that trigger transactions in other services.
+
+---
+
+## 2. Use Case: Policy Cancellation
+The most prominent implementation of the Saga pattern in SmartSure is the **Policy Cancellation flow**. When a policy is cancelled, we must ensure that any active claims related to that policy in the **Claims Service** are also rejected to prevent fraudulent payouts.
+
+### The Workflow:
+1.  **Policy Service**: Identifies a cancellation request $\rightarrow$ Updates status to `PENDING_CANCELLATION` $\rightarrow$ Emits `PolicyCancellationEvent`.
+2.  **Claims Service**: Listens for the event $\rightarrow$ Rejects all pending/active claims for that policy $\rightarrow$ Syncs the state.
+
+---
+
+## 3. Technical Implementation
+
+### Stage 1: Initiation (Policy Service)
+When a user requests a cancellation, the `PolicyCommandServiceImpl` initiates the saga.
+
+**File:** [PolicyCommandServiceImpl.java](file:///d:/smart-sure/SmartSure-Insurance-Management-System-V9/backend/policy-service/src/main/java/com/group2/policy_service/service/impl/PolicyCommandServiceImpl.java)
+
+```java
+// Lines 84-97
+public UserPolicyResponseDTO requestCancellation(Long upId, String reason) {
+    // 1. Update local state
+    up.setStatus(PolicyStatus.PENDING_CANCELLATION);
+    userPolicyRepository.save(up);
+
+    // 2. Publish Event to RabbitMQ
+    rabbitTemplate.convertAndSend(
+        RabbitMQConfig.POLICY_EXCHANGE, 
+        RabbitMQConfig.CANCELLATION_ROUTING_KEY, 
+        new PolicyCancellationEvent(up.getId(), up.getUserId(), LocalDateTime.now())
+    );
+    return mapper.mapToUserPolicyResponse(up);
+}
+```
+
+### Stage 2: Participation (Claims Service)
+The `Claims Service` acts as a participant, listening for the event and reacting to it.
+
+**File:** [PolicyCancellationListener.java](file:///d:/smart-sure/SmartSure-Insurance-Management-System-V9/backend/claims-service/src/main/java/com/group2/claims_service/listner/PolicyCancellationListener.java)
+
+```java
+// Lines 17-26
+@RabbitListener(queues = "policy.cancellation.queue")
+public void handlePolicyCancellation(PolicyCancellationEvent event) {
+    System.out.println("📬 Saga Stage 2: Received Policy Cancellation Event...");
+    try {
+        // Synchronize state: Reject related claims
+        claimService.cancelClaimsByPolicy(event.getUserPolicyId());
+        System.out.println("✅ Saga Stage 2: Claims synchronized.");
+    } catch (Exception e) {
+        // In a full Saga, this would trigger a compensation event back to Policy Service
+        System.err.println("❌ Saga Stage 2 Error: " + e.getMessage());
+    }
+}
+```
+
+---
+
+## 4. Why Use This Pattern?
+*   **Data Integrity**: Prevents a "cancelled" policy from having "active" claims.
+*   **Decouplings**: The Policy Service doesn't need to know how the Claims Service handles cancellations; it just broadcasts the event.
+*   **Availability**: If the Claims Service is temporarily down, RabbitMQ holds the message until it comes back online, ensuring the transaction eventually completes (Eventual Consistency).
+
+## 5. Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant PS as Policy Service
+    participant RMQ as RabbitMQ (Exchange)
+    participant CS as Claims Service
+
+    User->>PS: Request Cancellation
+    PS->>PS: Update Status: PENDING_CANCELLATION
+    PS->>RMQ: Publish PolicyCancellationEvent
+    Note right of PS: Stage 1 Complete
+    RMQ-->>CS: Deliver Event to Queue
+    CS->>CS: Reject all claims for the Policy
+    Note right of CS: Stage 2 Complete
+    CS-->>User: (UI) Success Reflection
+```
+
+---
+
+## 6. Summary of Components
+| Component | Role | File Path |
+| :--- | :--- | :--- |
+| **Event Producer** | Initiates Saga | `policy-service/.../PolicyCommandServiceImpl.java` |
+| **Message Broker** | Transport Layer | `RabbitMQ` (Configured in `RabbitMQConfig.java`) |
+| **Event Consumer** | Completes Saga | `claims-service/.../PolicyCancellationListener.java` |
+| **Event Object** | Data Carrier | `PolicyCancellationEvent.java` (DTO) |

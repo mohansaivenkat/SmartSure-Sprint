@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSure - Test Coverage Reports</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin: 10px 0;
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        li:hover {
+            background: #e0e6e8;
+        }
+        a {
+            text-decoration: none;
+            color: #2980b9;
+            font-size: 18px;
+            font-weight: bold;
+            display: block;
+        }
+        a:hover {
+            color: #1c5980;
+        }
+        .desc {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Microservices Test Coverage Reports 📊</h1>
+    <p style="text-align: center; color: #7f8c8d;">JaCoCo Code Coverage built automatically for all services.</p>
+    <ul>
+        <li>
+            <a href="admin-service/target/site/jacoco/index.html" target="_blank">Admin Service</a>
+            <div class="desc">Coverage for administrative endpoints and logic.</div>
+        </li>
+        <li>
+            <a href="api-gateway/target/site/jacoco/index.html" target="_blank">API Gateway</a>
+            <div class="desc">Coverage for routing and security configurations.</div>
+        </li>
+        <li>
+            <a href="auth-service/target/site/jacoco/index.html" target="_blank">Auth Service</a>
+            <div class="desc">Coverage for authentication and token management.</div>
+        </li>
+        <li>
+            <a href="claims-service/target/site/jacoco/index.html" target="_blank">Claims Service</a>
+            <div class="desc">Coverage for claims processing and dispute management.</div>
+        </li>
+        <li>
+            <a href="config-server/target/site/jacoco/index.html" target="_blank">Config Server</a>
+            <div class="desc">Coverage for centralized configuration.</div>
+        </li>
+        <li>
+            <a href="eureka-server/target/site/jacoco/index.html" target="_blank">Eureka Server</a>
+            <div class="desc">Coverage for service discovery mechanics.</div>
+        </li>
+        <li>
+            <a href="notification-service/target/site/jacoco/index.html" target="_blank">Notification Service</a>
+            <div class="desc">Coverage for email and alert distribution.</div>
+        </li>
+        <li>
+            <a href="payment-service/target/site/jacoco/index.html" target="_blank">Payment Service</a>
+            <div class="desc">Coverage for payment gateways and billing.</div>
+        </li>
+        <li>
+            <a href="policy-service/target/site/jacoco/index.html" target="_blank">Policy Service</a>
+            <div class="desc">Coverage for policy creation and lifecycle management.</div>
+        </li>
+    </ul>
+    
+    <div style="text-align: center; margin-top: 30px;">
+        <button onclick="window.location.reload();" style="padding: 10px 20px; font-size: 16px; border: none; background: #27ae60; color: #fff; border-radius: 5px; cursor: pointer;">Refresh Reports</button>
+    </div>
+</div>
+
+</body>
+</html>
