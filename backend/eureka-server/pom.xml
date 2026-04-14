@@ -29,9 +29,9 @@
 	<properties>
 		<java.version>21</java.version>
 		<spring-cloud.version>2025.0.1</spring-cloud.version>
-		<sonar.organization>vadlamudi-puneeth</sonar.organization>
+		<sonar.organization>mohansaivenkat</sonar.organization>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
-		<sonar.projectKey>vadlamudi-puneeth_eureka-server</sonar.projectKey>
+		<sonar.projectKey>mohansaivenkat_eureka-server</sonar.projectKey>
 		<sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
 		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 		<sonar.coverage.exclusions>**/dto/**, **/entity/**, **/config/**, **/*SecurityConfig*, **/*Application.class</sonar.coverage.exclusions>
