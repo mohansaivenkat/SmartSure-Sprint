@@ -123,7 +123,7 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
             # Navigate to project directory (Adjust path as needed)
-            cd ~/SmartSure-Insurance-Management-System-V9 || cd ~/SmartSure* || echo "Directory not found"
+            cd ~/SmartSure-Insurance-Management-System-V12 || cd ~/SmartSure* || echo "Directory not found"
             
             # Pull latest images
             docker-compose pull

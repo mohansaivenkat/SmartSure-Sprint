@@ -84,7 +84,7 @@ services:
       - "github.com:20.207.73.82"
     environment:
       - SPRING_PROFILES_ACTIVE=docker,git
-      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/Vadlamudi-Puneeth/configurations.git
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/mohansaivenkat/SmartSure-Config-Server.git
       - SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL=main
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     depends_on:
