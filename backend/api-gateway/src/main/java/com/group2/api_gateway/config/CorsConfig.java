@@ -17,10 +17,11 @@ public class CorsConfig {
         config.setAllowedOrigins(List.of(
             "http://localhost:3000", 
             "http://localhost:5173", 
-            "http://20.2.137.178:3000/"
+            "http://20.2.137.178:3000"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
+        config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
