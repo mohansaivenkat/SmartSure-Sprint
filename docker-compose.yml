@@ -110,6 +110,9 @@ services:
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:9999
       - SPRING_CLOUD_CONFIG_URI=http://config-server:9999
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - ZIPKIN_HOST=zipkin
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5044
     depends_on:
@@ -131,6 +134,9 @@ services:
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:9999
       - SPRING_CLOUD_CONFIG_URI=http://config-server:9999
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - ZIPKIN_HOST=zipkin
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5044
     depends_on:
@@ -154,6 +160,9 @@ services:
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:9999
       - SPRING_CLOUD_CONFIG_URI=http://config-server:9999
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - ZIPKIN_HOST=zipkin
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5044
     depends_on:
@@ -175,6 +184,9 @@ services:
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:9999
       - SPRING_CLOUD_CONFIG_URI=http://config-server:9999
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - ZIPKIN_HOST=zipkin
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5044
     depends_on:
@@ -194,6 +206,9 @@ services:
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:9999
       - SPRING_CLOUD_CONFIG_URI=http://config-server:9999
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - ZIPKIN_HOST=zipkin
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5044
     depends_on:
@@ -213,6 +228,9 @@ services:
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:9999
       - SPRING_CLOUD_CONFIG_URI=http://config-server:9999
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - ZIPKIN_HOST=zipkin
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5044
     depends_on:
@@ -237,6 +255,9 @@ services:
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:9999
       - SPRING_CLOUD_CONFIG_URI=http://config-server:9999
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - ZIPKIN_HOST=zipkin
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5044
     depends_on:
