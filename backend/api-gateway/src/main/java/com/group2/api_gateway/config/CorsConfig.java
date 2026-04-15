@@ -17,11 +17,7 @@ public class CorsConfig {
         config.setAllowedOrigins(List.of(
             "http://localhost:3000", 
             "http://localhost:5173", 
-            "http://20.40.46.104:3000",
-            "http://smartsureinsurance.work.gd",
-            "https://smartsureinsurance.work.gd",
-            "http://smartsureinsurance.work.gd.",
-            "https://smartsureinsurance.work.gd."
+            "http://20.2.137.178:3000/"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
